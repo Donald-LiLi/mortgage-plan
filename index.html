@@ -1,0 +1,1912 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>房贷消除计划</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+:root{--pri:#4F46E5;--pri2:#EEF2FF;--ok:#10B981;--ok2:#D1FAE5;--warn:#F59E0B;--err:#EF4444;--bg:#F0F2F5;--card:#FFF;--t1:#1E293B;--t2:#64748B;--t3:#94A3B8;--bd:#E2E8F0;--biz:#4F46E5;--gjj:#059669;--r:14px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB',sans-serif;background:var(--bg);color:var(--t1);max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:72px}
+
+.date-bar{padding:16px 20px 8px;display:flex;justify-content:space-between;align-items:center}
+.date-bar .today{font-size:13px;color:var(--t2)}
+.date-bar .today b{color:var(--t1);font-size:15px}
+.date-bar .countdown{font-size:11px;color:var(--pri);background:var(--pri2);padding:4px 10px;border-radius:20px;font-weight:600}
+
+.dash{margin:8px 16px;background:linear-gradient(135deg,#4F46E5 0%,#7C3AED 100%);border-radius:var(--r);padding:20px;color:#fff}
+.dash .d-label{font-size:12px;opacity:.7;margin-bottom:4px}
+.dash .d-big{font-size:32px;font-weight:700;letter-spacing:-1px}
+.dash .d-big .u{font-size:13px;font-weight:400;opacity:.7;margin-left:2px}
+.dash .d-row{display:flex;gap:0;margin-top:16px}
+.dash .d-cell{flex:1;text-align:center;position:relative}
+.dash .d-cell+.d-cell::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:1px;background:rgba(255,255,255,.2)}
+.dash .d-cell .dc-l{font-size:10px;opacity:.6;margin-bottom:2px}
+.dash .d-cell .dc-v{font-size:14px;font-weight:600}
+.dash .prog-wrap{height:8px;background:rgba(255,255,255,.2);border-radius:4px;margin-top:16px;overflow:hidden}
+.dash .prog-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,#34D399,#6EE7B7);transition:width .6s}
+.dash .prog-info{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;opacity:.7}
+
+.loan-card{margin:10px 16px;background:var(--card);border-radius:var(--r);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.lc-head{padding:16px 16px 0;display:flex;justify-content:space-between;align-items:center}
+.lc-tag{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600}
+.lc-tag.biz{background:var(--pri2);color:var(--biz)}
+.lc-tag.gjj{background:#ECFDF5;color:var(--gjj)}
+.lc-rate{font-size:12px;color:var(--t3)}
+
+.lc-trio{display:flex;padding:12px 16px 14px;gap:0}
+.lc-trio .tri{flex:1;text-align:center;position:relative}
+.lc-trio .tri+.tri::before{content:'';position:absolute;left:0;top:2px;bottom:2px;width:1px;background:var(--bd)}
+.lc-trio .tri-l{font-size:10px;color:var(--t3);margin-bottom:3px}
+.lc-trio .tri-v{font-size:15px;font-weight:700}
+.lc-trio .tri-v.remain{color:var(--err)}
+.lc-trio .tri-v.paid{color:var(--ok)}
+
+.lc-progress{padding:0 16px 12px}
+.lc-prog-wrap{height:6px;background:#F1F5F9;border-radius:3px;overflow:hidden}
+.lc-prog-bar{height:100%;border-radius:3px;transition:width .6s}
+.lc-prog-bar.biz{background:linear-gradient(90deg,#818CF8,#4F46E5)}
+.lc-prog-bar.gjj{background:linear-gradient(90deg,#34D399,#059669)}
+.lc-prog-info{display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-top:4px}
+
+.lc-int{display:flex;margin:0 16px 10px;padding:8px 10px;background:#FAFBFE;border-radius:8px;gap:0;font-size:10px}
+.lc-int .ii{flex:1;text-align:center;position:relative}
+.lc-int .ii+.ii::before{content:'';position:absolute;left:0;top:2px;bottom:2px;width:1px;background:var(--bd)}
+.lc-int .ii-l{color:var(--t3);margin-bottom:1px}
+.lc-int .ii-v{font-weight:700;font-size:12px}
+.lc-int .ii-v.neg{color:var(--err)}
+.lc-int .ii-v.pos{color:var(--ok)}
+.lc-current{margin:0 16px 14px;padding:12px;background:#F8FAFC;border-radius:10px;border:1px solid var(--bd)}
+.lc-cur-title{font-size:11px;color:var(--t2);font-weight:600;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.lc-cur-title .badge{font-size:10px;padding:2px 6px;border-radius:4px}
+.lc-cur-title .badge.pending{background:#FEF3C7;color:#92400E}
+.lc-cur-title .badge.done{background:var(--ok2);color:#065F46}
+.lc-cur-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.lc-cur-grid .cg{text-align:center}
+.lc-cur-grid .cg-l{font-size:10px;color:var(--t3)}
+.lc-cur-grid .cg-v{font-size:13px;font-weight:700;margin-top:1px}
+
+.lc-expand{display:flex;align-items:center;justify-content:center;padding:10px;border-top:1px solid var(--bd);cursor:pointer;font-size:12px;color:var(--pri);font-weight:600;gap:4px;user-select:none;transition:.2s}
+.lc-expand:active{background:#F8FAFC}
+.lc-expand .arrow{transition:transform .3s;display:inline-block}
+.lc-expand.open .arrow{transform:rotate(180deg)}
+
+.lc-schedule{max-height:0;overflow:hidden;transition:max-height .4s ease}
+.lc-schedule.open{max-height:2000px;overflow-y:auto}
+.sch-table{width:100%;border-collapse:collapse;font-size:11px}
+.sch-table th{background:#F8FAFC;padding:8px 6px;font-weight:600;color:var(--t2);border-bottom:2px solid var(--bd);position:sticky;top:0;text-align:right;font-size:10px}
+.sch-table th:first-child{text-align:left;padding-left:16px}
+.sch-table td{padding:7px 6px;border-bottom:1px solid #F8FAFC;text-align:right;font-variant-numeric:tabular-nums}
+.sch-table td:first-child{text-align:left;color:var(--t2);font-size:10px;padding-left:16px}
+.sch-table td:last-child{padding-right:16px;font-weight:600}
+.sch-table th:last-child{padding-right:16px}
+.sch-table tr.cur{background:#EEF2FF}
+.sch-table tr.cur td{color:var(--biz);font-weight:600}
+.sch-table tr.gcur{background:#ECFDF5}
+.sch-table tr.gcur td{color:var(--gjj);font-weight:600}
+.sch-table tr:hover{background:#FAFBFC}
+.sch-load-more{text-align:center;padding:12px;font-size:12px;color:var(--pri);cursor:pointer;font-weight:600}
+
+.sec{padding:14px 16px 0}
+.sec h2{font-size:14px;font-weight:600;margin-bottom:10px}
+.fc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fc{background:var(--card);border-radius:10px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.fc .fl{font-size:10px;color:var(--t3);margin-bottom:2px}
+.fc .fv{font-size:16px;font-weight:700}
+.fc .fu{font-size:10px;color:var(--t2)}
+.fc .fs{font-size:10px;color:var(--ok);margin-top:3px}
+
+.chart-c{background:var(--card);border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+canvas{width:100%!important;height:180px!important}
+
+.journey-wrap{background:var(--card);border-radius:12px;padding:16px 16px 12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.j-bar{position:relative;height:6px;background:var(--bd);border-radius:3px;margin:24px 0 32px}
+.j-bar-fill{position:absolute;left:0;top:0;height:100%;border-radius:3px;background:linear-gradient(90deg,#4F46E5,#7C3AED);transition:width .8s}
+.j-tick{position:absolute;top:-3px;width:1px;height:12px;background:var(--bd)}
+.j-tick.done{background:rgba(79,70,229,.3)}
+.j-cur-dot{position:absolute;top:-9px;width:24px;height:24px;border-radius:50%;background:var(--pri);border:3px solid #fff;box-shadow:0 0 0 3px rgba(79,70,229,.2),0 2px 8px rgba(79,70,229,.3);transform:translateX(-50%);z-index:3;display:flex;align-items:center;justify-content:center;font-size:11px;pointer-events:none}
+.j-major{position:absolute;top:-10px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;z-index:2;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.j-major .jm-icon{width:22px;height:22px;border-radius:50%;background:#F1F5F9;border:2px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:11px}
+.j-major.done .jm-icon{border-color:var(--pri);background:var(--pri2)}
+.j-major .jm-lbl{font-size:8px;color:var(--t3);margin-top:2px;white-space:nowrap}
+.j-major.done .jm-lbl{color:var(--pri);font-weight:600}
+.j-info{text-align:center;font-size:11px;color:var(--t2);line-height:1.7;padding-top:8px;border-top:1px dashed var(--bd)}
+.j-info b{color:var(--t1);font-size:13px}
+.j-pct{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--pri);font-weight:700;white-space:nowrap}
+
+.bbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:10px 16px;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-top:1px solid var(--bd);display:flex;gap:8px;z-index:100}
+.btn{flex:1;padding:10px;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;text-align:center}
+.btn1{background:var(--pri);color:#fff}
+.btn2{background:var(--card);color:var(--pri);border:1.5px solid var(--pri)}
+.btn3{background:var(--gjj);color:#fff}
+.btn:active{opacity:.8;transform:scale(.98)}
+
+.mo{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center}
+.mo.show{display:flex}
+.mo-c{background:#fff;width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:20px 20px 36px;max-height:88vh;overflow-y:auto}
+.mo-c h3{font-size:16px;font-weight:700;margin-bottom:16px;text-align:center}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:12px;font-weight:600;color:var(--t2);margin-bottom:4px}
+.fg input,.fg select{width:100%;padding:10px;border:1.5px solid var(--bd);border-radius:10px;font-size:14px;outline:none;background:#F8FAFC}
+.fg input:focus,.fg select:focus{border-color:var(--pri);background:#fff}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.fa{display:flex;gap:10px;margin-top:16px}
+.fa .btn{padding:12px}
+.pi-wrap{display:flex;gap:8px;align-items:center}
+.pi-wrap input{flex:1}
+.pi-wrap select{width:72px;flex-shrink:0}
+.pi-hint{font-size:10px;color:var(--pri);margin-top:3px}
+.tabs{display:flex;background:#F1F5F9;border-radius:10px;padding:3px;margin-bottom:14px}
+.tab{flex:1;padding:7px;text-align:center;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;color:var(--t2)}
+.tab.on{background:#fff;color:var(--pri);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.sep{font-size:13px;font-weight:700;margin:14px 0 8px;display:flex;align-items:center;gap:8px}
+.sep::after{content:'';flex:1;height:1px;background:var(--bd)}
+.sep.biz{color:var(--biz)}
+.sep.gjj{color:var(--gjj)}
+.ocr-zone{border:2px dashed var(--bd);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:.2s;margin-bottom:12px}
+.ocr-zone:hover{border-color:var(--pri);background:var(--pri2)}
+.ocr-zone p{font-size:12px;color:var(--t2);margin-top:6px}
+.ocr-preview{max-width:100%;max-height:180px;border-radius:8px;margin:8px 0;object-fit:contain}
+.ocr-status{font-size:12px;color:var(--pri);text-align:center;padding:6px 0}
+.ocr-result{background:#F8FAFC;border-radius:10px;padding:10px;margin:8px 0;font-size:12px}
+.or-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #F1F5F9}
+.or-row:last-child{border:none}
+.or-k{color:var(--t2)}
+.or-v{font-weight:600}
+.valid-bar{margin:6px 16px;padding:6px 12px;border-radius:8px;font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;transition:.2s}
+.valid-bar.ok{background:#ECFDF5;color:#065F46}
+.valid-bar.warn{background:#FEE2E2;color:#991B1B}
+.valid-bar .vi{font-weight:600;flex:1}
+.valid-bar .vd{opacity:.7;margin-left:4px}
+.valid-detail{display:none;margin:0 16px 4px;padding:8px 12px;border-radius:0 0 8px 8px;font-size:10px;color:var(--t2);background:#F8FAFC;flex-wrap:wrap;gap:4px 12px}
+.valid-detail.show{display:flex}
+.calc-hint{font-size:10px;color:var(--pri);margin-top:2px;min-height:14px}
+.calc-hint.warn{color:var(--err)}
+.ctab{padding:4px 8px;font-size:11px;font-weight:600;border-radius:6px;cursor:pointer;color:var(--t2);white-space:nowrap;user-select:none}
+.ctab.on{background:#fff;color:var(--pri);box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.lc-expand-row{display:flex;border-top:1px solid var(--bd)}
+.lc-expand-row .lc-expand{flex:1;border-top:none}
+.lc-expand-row .lc-expand+.lc-expand{border-left:1px solid var(--bd)}
+.sch-table tr.row-prepay{background:#FEF3C7}
+.sch-table tr.row-prepay td{color:#92400E;font-weight:600}
+.sch-table tr.row-hist{background:#F1F5F9}
+.sch-table tr.row-hist td{color:var(--t3)}
+.sim-card{background:#F8FAFC;border-radius:10px;padding:12px;border:1.5px solid var(--bd)}
+.sim-card.rec{border-color:var(--pri);background:var(--pri2)}
+.sim-title{font-size:13px;font-weight:700;margin-bottom:8px;text-align:center}
+.sim-row{display:flex;justify-content:space-between;font-size:11px;padding:5px 0;border-bottom:1px solid #F1F5F9}
+.sim-row:last-child{border:none}
+.sim-row .sl{color:var(--t2)}
+.sim-row .sv{font-weight:600;text-align:right}
+.sim-row .sv.hi{color:var(--pri);font-size:13px}
+.sim-quick{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.sim-quick span{padding:5px 14px;border-radius:20px;font-size:12px;background:#F1F5F9;color:var(--t2);cursor:pointer;font-weight:600;transition:.15s}
+.sim-quick span:active,.sim-quick span.on{background:var(--pri);color:#fff}
+.guide-hero{text-align:center;padding:32px 0 16px}
+.guide-hero .icon{font-size:56px;margin-bottom:12px}
+.guide-hero h2{font-size:22px;margin-bottom:8px;color:var(--t1)}
+.guide-hero p{color:var(--t2);font-size:13px;line-height:1.7}
+.guide-opt{padding:14px 16px;border:2px solid var(--bd);border-radius:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:.15s;margin-bottom:8px}
+.guide-opt:active,.guide-opt.on{border-color:var(--pri);background:var(--pri2)}
+.guide-opt b{font-size:14px}
+.guide-opt span{font-size:11px;color:var(--t2)}
+.guide-hint{font-size:10px;color:var(--t3);margin-top:2px;line-height:1.4}
+.guide-step{display:flex;justify-content:center;gap:6px;margin-bottom:16px}
+.guide-step i{width:8px;height:8px;border-radius:50%;background:var(--bd);display:block}
+.guide-step i.on{background:var(--pri);width:20px;border-radius:4px}
+</style>
+</head>
+<body>
+
+<div class="date-bar">
+  <div class="today" id="todayBar"></div>
+  <div class="countdown" id="countdown"></div>
+</div>
+
+<div class="dash">
+  <div class="d-label">房贷剩余总额</div>
+  <div class="d-big" id="dBig">--<span class="u">元</span></div>
+  <div class="d-row">
+    <div class="d-cell"><div class="dc-l">原始贷款</div><div class="dc-v" id="dTotal">--</div></div>
+    <div class="d-cell"><div class="dc-l">已还本金</div><div class="dc-v" id="dPaid">--</div></div>
+    <div class="d-cell"><div class="dc-l">每月合计</div><div class="dc-v" id="dMonthly">--</div></div>
+    <div class="d-cell"><div class="dc-l">预计还清</div><div class="dc-v" id="dPayoff">--</div></div>
+  </div>
+  <div class="d-row" style="margin-top:10px">
+    <div class="d-cell"><div class="dc-l">已付利息</div><div class="dc-v" id="dIntPaid">--</div></div>
+    <div class="d-cell"><div class="dc-l">剩余利息</div><div class="dc-v" id="dIntRemain">--</div></div>
+    <div class="d-cell"><div class="dc-l">利息总额</div><div class="dc-v" id="dIntTotal">--</div></div>
+  </div>
+  <div class="prog-wrap"><div class="prog-bar" id="dProg" style="width:0%"></div></div>
+  <div class="prog-info"><span id="dPct">0%</span><span id="dRemainLabel">--</span></div>
+</div>
+
+<div class="valid-bar ok" id="validBar" style="display:none" onclick="document.getElementById('validDetail').classList.toggle('show')"></div>
+<div class="valid-detail" id="validDetail"></div>
+
+<div class="loan-card" id="bizCardWrap" style="display:none">
+  <div class="lc-head"><span class="lc-tag biz">商业贷款</span><span class="lc-rate" id="bizRate2"></span></div>
+  <div class="lc-trio">
+    <div class="tri"><div class="tri-l">原始贷款</div><div class="tri-v" id="bizOrig">--</div></div>
+    <div class="tri"><div class="tri-l">已还本金</div><div class="tri-v paid" id="bizPaid">--</div></div>
+    <div class="tri"><div class="tri-l">剩余本金</div><div class="tri-v remain" id="bizRem">--</div></div>
+  </div>
+  <div class="lc-progress">
+    <div class="lc-prog-wrap"><div class="lc-prog-bar biz" id="bizProg" style="width:0%"></div></div>
+    <div class="lc-prog-info"><span id="bizPct">--</span><span id="bizPeriodInfo">--</span></div>
+  </div>
+  <div class="lc-int" id="bizIntStats"></div>
+  <div class="lc-current" id="bizCurrent"></div>
+  <div class="lc-expand-row">
+    <div class="lc-expand" onclick="toggleSch('bizHist')"><span id="bizHistLabel">已还记录</span><span class="arrow" id="bizHistArrow">&#9660;</span></div>
+    <div class="lc-expand" onclick="toggleSch('biz')"><span>完整还款计划</span><span class="arrow" id="bizArrow">&#9660;</span></div>
+  </div>
+  <div class="lc-schedule" id="bizHistSch"></div>
+  <div class="lc-schedule" id="bizSch"></div>
+</div>
+
+<div class="loan-card" id="gjjCardWrap" style="display:none">
+  <div class="lc-head"><span class="lc-tag gjj">公积金贷款</span><span class="lc-rate" id="gjjRate2"></span></div>
+  <div class="lc-trio">
+    <div class="tri"><div class="tri-l">原始贷款</div><div class="tri-v" id="gjjOrig">--</div></div>
+    <div class="tri"><div class="tri-l">已还本金</div><div class="tri-v paid" id="gjjPaid">--</div></div>
+    <div class="tri"><div class="tri-l">剩余本金</div><div class="tri-v remain" id="gjjRem">--</div></div>
+  </div>
+  <div class="lc-progress">
+    <div class="lc-prog-wrap"><div class="lc-prog-bar gjj" id="gjjProg" style="width:0%"></div></div>
+    <div class="lc-prog-info"><span id="gjjPct">--</span><span id="gjjPeriodInfo">--</span></div>
+  </div>
+  <div class="lc-int" id="gjjIntStats"></div>
+  <div class="lc-current" id="gjjCurrent"></div>
+  <div class="lc-expand-row">
+    <div class="lc-expand" onclick="toggleSch('gjjHist')"><span id="gjjHistLabel">已还记录</span><span class="arrow" id="gjjHistArrow">&#9660;</span></div>
+    <div class="lc-expand" onclick="toggleSch('gjj')"><span>完整还款计划</span><span class="arrow" id="gjjArrow">&#9660;</span></div>
+  </div>
+  <div class="lc-schedule" id="gjjHistSch"></div>
+  <div class="lc-schedule" id="gjjSch"></div>
+</div>
+
+<div class="sec"><h2>还款旅程</h2><div class="journey-wrap" id="milestones"></div></div>
+<div class="sec"><h2>未来余额预测</h2><div class="fc-grid" id="fcGrid"></div></div>
+<!-- 成就卡片弹窗 -->
+<div class="mo" id="achieveModal" style="align-items:center;justify-content:center"><div style="text-align:center;padding:20px">
+  <canvas id="achieveCanvas" style="border-radius:16px;max-width:340px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.3)"></canvas>
+  <div style="margin-top:16px;display:flex;gap:10px;justify-content:center">
+    <button class="btn btn1" style="flex:none;padding:10px 24px" onclick="saveAchieveImg()">保存图片</button>
+    <button class="btn btn2" style="flex:none;padding:10px 24px;background:rgba(255,255,255,.9)" onclick="closeMo('achieveModal')">关闭</button>
+  </div>
+</div></div>
+<div class="sec" style="padding-bottom:16px"><div class="chart-c">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <h2 style="font-size:14px;font-weight:600;margin:0">余额趋势</h2>
+    <div style="display:flex;background:#F1F5F9;border-radius:8px;padding:2px;gap:1px">
+      <div class="ctab on" data-r="12" onclick="setChartRange(this)">1年</div>
+      <div class="ctab" data-r="36" onclick="setChartRange(this)">3年</div>
+      <div class="ctab" data-r="60" onclick="setChartRange(this)">5年</div>
+      <div class="ctab" data-r="120" onclick="setChartRange(this)">10年</div>
+      <div class="ctab" data-r="0" onclick="setChartRange(this)">全部</div>
+    </div>
+  </div>
+  <canvas id="chart"></canvas>
+</div></div>
+
+<div class="bbar">
+  <button class="btn btn2" onclick="openMo('event')">+ 记录</button>
+  <button class="btn btn1" style="flex:1.5" onclick="openMo('sim')">模拟还款</button>
+  <button class="btn btn2" style="flex:none;width:44px;padding:10px 0;font-size:18px" onclick="openMo('init')" title="设置">⚙</button>
+</div>
+
+<!-- 首次引导弹窗 -->
+<div class="mo" id="guideModal" style="align-items:center"><div class="mo-c" style="border-radius:20px;max-height:92vh" id="guideContent"></div></div>
+
+<!-- 模拟还款弹窗 -->
+<div class="mo" id="simModal"><div class="mo-c">
+  <h3>提前还款模拟</h3>
+  <div class="fg"><label>还款对象</label><select id="simTgt" onchange="runSim()"><option value="biz">商业贷款</option><option value="gjj">公积金贷款</option></select></div>
+  <div class="fg"><label>提前还款金额（元）</label><input type="number" id="simAmt" step="10000" placeholder="输入金额后自动计算" oninput="runSim()">
+    <div class="sim-quick" id="simQuick"></div>
+  </div>
+  <div id="simResult"><div style="text-align:center;padding:24px;color:var(--t3);font-size:12px">输入金额后自动对比两种方案</div></div>
+  <div class="fa"><button class="btn btn2" onclick="closeMo('simModal')">关闭</button><button class="btn btn1" id="simApplyBtn" style="display:none" onclick="simApply()">记录此次还款</button></div>
+</div></div>
+
+<!-- 设置弹窗 -->
+<div class="mo" id="initModal"><div class="mo-c">
+  <h3>贷款信息设置</h3>
+  <div class="sep biz">商业贷款</div>
+  <div class="fr">
+    <div class="fg"><label>剩余本金（元）</label><input type="number" id="iBR" step="0.01" placeholder="银行APP贷款余额"></div>
+    <div class="fg"><label>每月还款（元）</label><input type="number" id="iBM" step="0.01" placeholder="每月扣款金额"><div class="calc-hint" id="bizCalcHint"></div></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>年利率（%）</label><input type="number" id="iBRa" step="0.01" placeholder="如 3.2"></div>
+    <div class="fg"><label>剩余期数</label>
+      <div class="pi-wrap"><input type="number" id="iBPV" oninput="cvtP('biz')"><select id="iBPU" onchange="cvtP('biz')"><option value="m">期(月)</option><option value="y">年</option></select></div>
+      <div class="pi-hint" id="bizPH"></div>
+    </div>
+  </div>
+  <div class="sep gjj">公积金贷款</div>
+  <div class="fr">
+    <div class="fg"><label>剩余本金（元）</label><input type="number" id="iGR" step="0.01" placeholder="银行APP贷款余额"></div>
+    <div class="fg"><label>每月还款（元）</label><input type="number" id="iGM" step="0.01" placeholder="每月扣款金额"><div class="calc-hint" id="gjjCalcHint"></div></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>年利率（%）</label><input type="number" id="iGRa" step="0.01" placeholder="如 2.85"></div>
+    <div class="fg"><label>剩余期数</label>
+      <div class="pi-wrap"><input type="number" id="iGPV" oninput="cvtP('gjj')"><select id="iGPU" onchange="cvtP('gjj')"><option value="m">期(月)</option><option value="y">年</option></select></div>
+      <div class="pi-hint" id="gjjPH"></div>
+    </div>
+  </div>
+  <!-- 高级设置折叠区 -->
+  <div style="margin-top:12px;border:1px solid var(--bd);border-radius:10px;overflow:hidden">
+    <div style="padding:10px 14px;background:#F8FAFC;cursor:pointer;font-size:12px;font-weight:600;color:var(--t2);display:flex;justify-content:space-between;align-items:center" onclick="const b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('span').textContent=b.style.display==='none'?'▼':'▲'">
+      高级设置 <span>▼</span>
+    </div>
+    <div style="display:none;padding:12px 14px">
+      <div class="fr3">
+        <div class="fg"><label>贷款起始月</label><input type="month" id="iDate"></div>
+        <div class="fg"><label>商贷还款日</label><input type="number" id="iBizDay" min="1" max="28" placeholder="12"></div>
+        <div class="fg"><label>公积金还款日</label><input type="number" id="iGjjDay" min="1" max="28" placeholder="15"></div>
+      </div>
+      <div class="fg"><label>数据截止月份（系统自动维护）</label><input type="month" id="iAsOf"></div>
+      <div class="fr">
+        <div class="fg"><label>商贷总额（元）</label><input type="number" id="iBT" step="0.01" placeholder="最初贷款金额"></div>
+        <div class="fg"><label>公积金总额（元）</label><input type="number" id="iGT" step="0.01" placeholder="最初贷款金额"></div>
+      </div>
+    </div>
+  </div>
+  <div class="fa">
+    <button class="btn btn2" onclick="closeMo('initModal')">取消</button>
+    <button class="btn btn1" onclick="saveInit()">确认保存</button>
+  </div>
+  <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd);display:flex;gap:8px;flex-wrap:wrap">
+    <button style="flex:1;padding:8px;border:1px solid var(--bd);border-radius:8px;background:#F8FAFC;font-size:11px;color:var(--t2);cursor:pointer" onclick="closeMo('initModal');openMo('ocr')">📷 截图识别导入</button>
+    <button style="flex:1;padding:8px;border:1px solid var(--bd);border-radius:8px;background:#F8FAFC;font-size:11px;color:var(--t2);cursor:pointer" onclick="exportData()">💾 导出数据备份</button>
+    <button style="flex:1;padding:8px;border:1px solid var(--bd);border-radius:8px;background:#F8FAFC;font-size:11px;color:var(--t2);cursor:pointer" onclick="document.getElementById('importFile').click()">📂 导入数据</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
+    <button style="flex-basis:100%;padding:8px;border:1px solid #FECACA;border-radius:8px;background:#fff;font-size:11px;color:var(--err);cursor:pointer" onclick="resetData()">重置所有数据</button>
+  </div>
+</div></div>
+
+<!-- OCR弹窗 -->
+<div class="mo" id="ocrModal"><div class="mo-c">
+  <h3>截图识别导入</h3>
+  <div class="fg"><label>导入目标</label><select id="ocrTarget"><option value="biz">商业贷款</option><option value="gjj">公积金贷款</option></select></div>
+  <div class="ocr-zone" id="ocrZone" onclick="document.getElementById('ocrFile').click()"><div style="font-size:28px;color:var(--t3)">+</div><p>点击上传 或 拖拽银行截图</p></div>
+  <input type="file" id="ocrFile" accept="image/*" style="display:none" onchange="handleOCR(this)">
+  <img id="ocrPreview" class="ocr-preview" style="display:none">
+  <div class="ocr-status" id="ocrStatus"></div>
+  <div class="ocr-result" id="ocrResult" style="display:none"></div>
+  <div class="fa"><button class="btn btn2" onclick="closeMo('ocrModal')">取消</button><button class="btn btn1" id="ocrApplyBtn" style="display:none" onclick="applyOCR()">应用结果</button></div>
+</div></div>
+
+<!-- 记录弹窗 -->
+<div class="mo" id="eventModal"><div class="mo-c">
+  <h3>添加记录</h3>
+  <div class="tabs" id="evtTabs">
+    <div class="tab on" data-t="prepay" onclick="swTab(this)">提前还款</div>
+    <div class="tab" data-t="rate" onclick="swTab(this)">利率调整</div>
+    <div class="tab" data-t="correction" onclick="swTab(this)">余额校正</div>
+  </div>
+  <div class="fg"><label>日期</label><input type="date" id="evtDate" onchange="checkEvtDate()"><div class="calc-hint" id="evtDateHint"></div></div>
+  <div id="fPre">
+    <div class="fg"><label>还款对象</label><select id="preTgt"><option value="biz">商贷</option><option value="gjj">公积金</option></select></div>
+    <div class="fg"><label>提前还款金额（元）</label><input type="number" id="preAmt" step="0.01"></div>
+    <div class="fg"><label>还款方式 <span style="color:var(--err)">*必选</span></label>
+      <select id="preMode">
+        <option value="" disabled selected>请选择还款方式</option>
+        <option value="shorten">缩短期限，月供不变</option>
+        <option value="reduce">期限不变，月供减少</option>
+      </select>
+    </div>
+    <div class="fg"><label>还款后剩余本金（元，选填）</label><input type="number" id="preRem" step="0.01" placeholder="填银行显示的余额更准确"></div>
+    <div id="preExtraFields"></div>
+  </div>
+  <div id="fRate" style="display:none">
+    <div class="fg"><label>调整对象</label><select id="rateTgt"><option value="biz">商贷</option><option value="gjj">公积金</option></select></div>
+    <div class="fg"><label>新年利率（%）</label><input type="number" id="rateN" step="0.01"></div>
+    <div class="fg"><label>新月供（元）</label><input type="number" id="rateM" step="0.01"></div>
+  </div>
+  <div id="fCorr" style="display:none">
+    <div class="fg"><label>校正对象</label><select id="corrTgt"><option value="biz">商贷</option><option value="gjj">公积金</option></select></div>
+    <div class="fg"><label>实际剩余本金（元）</label><input type="number" id="corrRem" step="0.01" placeholder="银行APP显示的余额"></div>
+    <div class="fg"><label>实际月供（元，选填）</label><input type="number" id="corrM" step="0.01" placeholder="留空不变"></div>
+    <div class="fg"><label>实际剩余期数（选填）</label><input type="number" id="corrP" placeholder="留空不变"></div>
+  </div>
+  <div class="fg"><label>备注</label><input type="text" id="evtNote" placeholder="选填"></div>
+  <div class="fa">
+    <button class="btn btn2" onclick="closeMo('eventModal')">取消</button>
+    <button class="btn btn1" onclick="saveEvt()">保存</button>
+  </div>
+</div></div>
+
+<script>
+// ============================================================
+//  数据层 — 事件溯源架构 (Event Sourcing)
+//  baseline: 某个时间点的快照 (不可变)
+//  events:   用户操作记录 (提前还款/利率调整/余额校正)
+//  当前状态 = baseline + 自动月供扣减 + events 重放
+// ============================================================
+const SK='mortgage_v5';
+const R2=n=>Math.round(n*100)/100;
+const F=n=>n.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const F0=n=>{if(n>=1e6)return(n/1e4).toFixed(1)+'万';if(n>=1e4)return(n/1e4).toFixed(2)+'万';return F(n)};
+const FH=n=>n>=1e4?(n/1e4).toFixed(1)+'<span class="u"> 万元</span>':F(n)+'<span class="u"> 元</span>';
+const P2T=m=>{if(m<=0)return'已还清';const y=Math.floor(m/12),r=m%12;return y&&r?y+'年'+r+'个月':y?y+'年':r+'个月'};
+function calcPMT(p,rate,n){const r=rate/100/12;if(r===0||n===0)return 0;const x=Math.pow(1+r,n);return R2(p*r*x/(x-1))}
+// 根据剩余本金、月供、年利率反算剩余期数
+function recalcPeriods(remain,monthly,rate){
+  if(remain<=0)return 0;
+  const r=rate/100/12;
+  if(r<=0)return monthly>0?Math.ceil(remain/monthly):0;
+  const mInt=remain*r; // 当月利息
+  if(monthly<=mInt)return 9999; // 月供不够付利息
+  // n = -ln(1 - P*r/M) / ln(1+r)
+  return Math.ceil(-Math.log(1-remain*r/monthly)/Math.log(1+r));
+}
+function YM(y,m){return y+'-'+String(m).padStart(2,'0')}
+function nextYM(ym){let[y,m]=ym.split('-').map(Number);m++;if(m>12){m=1;y++}return YM(y,m)}
+function ymLE(a,b){return a<=b}
+
+function genSchedule(principal,pmt,rate,periods,startMonth){
+  const r=rate/100/12,sch=[];let rem=principal;
+  const sd=startMonth?new Date(startMonth+'-01'):new Date();
+  for(let i=1;i<=periods;i++){
+    const int=R2(rem*r);let prin,pay;
+    if(i===periods){prin=R2(rem);pay=R2(prin+int)}else{pay=pmt;prin=R2(pay-int)}
+    rem=R2(rem-prin);if(rem<0)rem=0;
+    const d=new Date(sd.getFullYear(),sd.getMonth()+(i-1));
+    sch.push({p:i,date:d.getFullYear()+'年'+String(d.getMonth()+1).padStart(2,'0')+'月',dk:YM(d.getFullYear(),d.getMonth()+1),prin,int,pay,rem});
+  }
+  return sch;
+}
+
+function LD(){try{return JSON.parse(localStorage.getItem(SK))}catch{return null}}
+function SD(d){localStorage.setItem(SK,JSON.stringify(d))}
+
+function getDefault(){
+  return{
+    initDate:'2023-12', bizPayDay:12, gjjPayDay:15,
+    asOfMonth:'2026-04', // 基线截止：2026年4月已还完，余额是4月还款后的
+    baseline:{
+      biz:{total:1100000,remain:854147.66,monthly:3971.42,rate:3.2,periods:320},
+      gjj:{total:1200000,remain:1133971.27,monthly:calcPMT(1133971.27,2.6,320),rate:2.6,periods:320}
+    },
+    events:[
+      {id:'hist_biz_prepay_1',date:'2024-09-25',type:'prepay',target:'biz',amount:200000,mode:'shorten',note:'提前还款20万'}
+    ]
+  };
+}
+
+// ============================================================
+//  核心：从 baseline 重放得到当前状态（按日期严格排序）
+//  1. 从 asOfMonth 的下个月开始，逐月处理到当前月
+//  2. 每月：利率调整先行，然后按日期排序处理自动扣款+用户事件
+//  3. 同一天内：自动扣款优先于用户事件（银行先扣，用户再操作）
+// ============================================================
+function computeState(rawData,overrideEndYM){
+  const data=JSON.parse(JSON.stringify(rawData)); // deep copy
+  const bl=data.baseline;
+  const biz={...bl.biz};
+  const gjj={...bl.gjj};
+
+  const now=new Date();
+  const actualCurYM=YM(now.getFullYear(),now.getMonth()+1);
+  const curYM=overrideEndYM||actualCurYM;
+
+  // 按月排列的事件索引: ym -> [events]
+  const evtMap={};
+  data.events.forEach(e=>{
+    const ym=e.date.substring(0,7);
+    if(!evtMap[ym])evtMap[ym]=[];
+    evtMap[ym].push(e);
+  });
+
+  const timeline=[];
+  let ym=nextYM(data.asOfMonth);
+
+  while(ymLE(ym,curYM)){
+    const monthEvts=evtMap[ym]||[];
+    const isPast=overrideEndYM?true:ym<actualCurYM;
+    const isCurrentMonth=!overrideEndYM&&ym===actualCurYM;
+    const bizDay=data.bizPayDay||12;
+    const gjjDay=data.gjjPayDay||15;
+
+    // 1) 利率调整事件优先（月初生效）
+    monthEvts.filter(e=>e.type==='rate').forEach(e=>{
+      const t=e.target==='gjj'?gjj:biz;
+      const oldRate=t.rate;
+      t.rate=e.newRate;
+      if(e.newMonthly)t.monthly=e.newMonthly;
+      t.periods=recalcPeriods(t.remain,t.monthly,t.rate);
+      timeline.push({...e,_oldRate:oldRate,_bizRem:biz.remain,_gjjRem:gjj.remain});
+    });
+
+    // 2) 构建本月所有操作（自动扣款+用户事件），按日期排序
+    const tasks=[];
+
+    // 自动扣款（仅在已到扣款日时加入）
+    if(isPast||(isCurrentMonth&&now.getDate()>=bizDay)){
+      tasks.push({_auto:'biz',_day:bizDay,_order:0});
+    }
+    if(isPast||(isCurrentMonth&&now.getDate()>=gjjDay)){
+      tasks.push({_auto:'gjj',_day:gjjDay,_order:0});
+    }
+
+    // 用户事件（提前还款+余额校正）
+    monthEvts.filter(e=>e.type==='prepay'||e.type==='correction').forEach(e=>{
+      tasks.push({...e,_day:parseInt(e.date.substring(8,10))||28,_order:1});
+    });
+
+    // 按日期排序，同一天自动扣款(_order=0)在用户事件(_order=1)之前
+    tasks.sort((a,b)=>a._day-b._day||a._order-b._order);
+
+    // 3) 逐条处理
+    for(const task of tasks){
+      if(task._auto==='biz'){
+        // 商贷自动扣款
+        if(biz.remain<=0||biz.periods<=0)continue;
+        const r=biz.rate/100/12;
+        const int=R2(biz.remain*r);
+        let prin,pay;
+        if(biz.periods===1){prin=R2(biz.remain);pay=R2(prin+int)}
+        else{pay=biz.monthly;prin=R2(pay-int);if(prin>biz.remain){prin=R2(biz.remain);pay=R2(prin+int)}}
+        biz.remain=R2(biz.remain-prin);if(biz.remain<0)biz.remain=0;
+        biz.periods=Math.max(0,biz.periods-1);
+        timeline.push({type:'auto',date:ym+'-'+String(bizDay).padStart(2,'0'),loanType:'biz',amount:pay,prin,int,_bizRem:biz.remain,_gjjRem:gjj.remain});
+
+      }else if(task._auto==='gjj'){
+        // 公积金自动扣款
+        if(gjj.remain<=0||gjj.periods<=0)continue;
+        const r=gjj.rate/100/12;
+        const int=R2(gjj.remain*r);
+        let prin,pay;
+        if(gjj.periods===1){prin=R2(gjj.remain);pay=R2(prin+int)}
+        else{pay=gjj.monthly;prin=R2(pay-int);if(prin>gjj.remain){prin=R2(gjj.remain);pay=R2(prin+int)}}
+        gjj.remain=R2(gjj.remain-prin);if(gjj.remain<0)gjj.remain=0;
+        gjj.periods=Math.max(0,gjj.periods-1);
+        timeline.push({type:'auto',date:ym+'-'+String(gjjDay).padStart(2,'0'),loanType:'gjj',amount:gjj.monthly,prin,int,_bizRem:biz.remain,_gjjRem:gjj.remain});
+
+      }else if(task.type==='prepay'){
+        // 提前还款
+        const t=task.target==='gjj'?gjj:biz;
+        if(task.remainAfter!=null)t.remain=task.remainAfter;
+        else t.remain=Math.max(0,R2(t.remain-task.amount));
+
+        if(task.mode==='reduce'){
+          if(task.newMonthly)t.monthly=task.newMonthly;
+          else t.monthly=calcPMT(t.remain,t.rate,t.periods);
+        }else{
+          t.periods=recalcPeriods(t.remain,t.monthly,t.rate);
+        }
+        timeline.push({...task,_bizRem:biz.remain,_gjjRem:gjj.remain,_newMonthly:t.monthly,_newPeriods:t.periods});
+
+      }else if(task.type==='correction'){
+        // 余额校正
+        const t=task.target==='gjj'?gjj:biz;
+        if(task.correctRemain!=null)t.remain=task.correctRemain;
+        if(task.correctMonthly)t.monthly=task.correctMonthly;
+        if(task.correctPeriods)t.periods=task.correctPeriods;
+        else if(task.correctRemain!=null&&!task.correctMonthly){
+          t.periods=recalcPeriods(t.remain,t.monthly,t.rate);
+        }
+        timeline.push({...task,_bizRem:biz.remain,_gjjRem:gjj.remain});
+      }
+    }
+
+    ym=nextYM(ym);
+  }
+
+  return{biz,gjj,timeline};
+}
+
+// ============================================================
+//  渲染
+// ============================================================
+function render(){
+  const rawData=LD();if(!rawData)return;
+  const{biz,gjj,timeline}=computeState(rawData);
+  updateDateBar(rawData);
+
+  const tL=rawData.baseline.biz.total+rawData.baseline.gjj.total;
+  const tR=biz.remain+gjj.remain;
+  const tPaid=tL-tR;
+  const pct=tL>0?tPaid/tL*100:0;
+  const mT=biz.monthly+gjj.monthly;
+
+  // 预计还清：下次还款月 + 剩余期数 - 1（各算各的，取最晚）
+  const nextBizM=getNextPayMonth(rawData,'biz');
+  const nextGjjM=getNextPayMonth(rawData,'gjj');
+  function payoffFromNext(nextM,periods){
+    if(periods<=0)return null;
+    const[y,m]=nextM.split('-').map(Number);
+    return new Date(y,m-1+periods-1); // m is 1-based, Date month is 0-based
+  }
+  const bizPoff=biz.remain>0?payoffFromNext(nextBizM,biz.periods):null;
+  const gjjPoff=gjj.remain>0?payoffFromNext(nextGjjM,gjj.periods):null;
+  const poff=bizPoff&&gjjPoff?(bizPoff>gjjPoff?bizPoff:gjjPoff):(bizPoff||gjjPoff||new Date());
+
+  document.getElementById('dBig').innerHTML=FH(tR);
+  document.getElementById('dTotal').textContent=F0(tL);
+  document.getElementById('dPaid').textContent=F0(tPaid);
+  document.getElementById('dMonthly').textContent=F(mT);
+  document.getElementById('dPayoff').textContent=poff.getFullYear()+'.'+(poff.getMonth()+1);
+  // 利息汇总（仪表盘）
+  const bizRemInt=biz.remain>0?R2(biz.periods*biz.monthly-biz.remain):0;
+  const gjjRemInt=gjj.remain>0?R2(gjj.periods*gjj.monthly-gjj.remain):0;
+  const totalRemInt=R2(bizRemInt+gjjRemInt);
+  // 已付利息：用各贷种分别算再合计（和renderIntStats同逻辑）
+  function calcPaidInt(type,loan){
+    const bl=rawData.baseline[type];
+    const init=rawData.initDate||'2023-12';const asOf=rawData.asOfMonth;
+    const[iy,im]=init.split('-').map(Number);const[ay,am]=asOf.split('-').map(Number);
+    let mp=(ay-iy)*12+(am-im);
+    mp+=timeline.filter(e=>e.type==='auto'&&e.loanType===type).length;
+    const pp=(rawData.events||[]).filter(e=>e.type==='prepay'&&e.target===type).reduce((s,e)=>s+(e.amount||0),0);
+    let rp=0,rc=0;
+    (rawData.events||[]).filter(e=>e.type==='auto_hist'&&e.target===type).forEach(e=>{rp+=e.amount||0;rc++});
+    timeline.filter(e=>e.type==='auto'&&e.loanType===type).forEach(e=>{rp+=e.amount||0;rc++});
+    const tp=rp+Math.max(0,mp-rc)*loan.monthly+pp;
+    return R2(Math.max(0,tp-(bl.total-loan.remain)));
+  }
+  const totalPaidInt=R2(calcPaidInt('biz',biz)+calcPaidInt('gjj',gjj));
+  const totalAllInt=R2(totalPaidInt+totalRemInt);
+  document.getElementById('dIntPaid').textContent=F0(totalPaidInt);
+  document.getElementById('dIntRemain').textContent=F0(totalRemInt);
+  document.getElementById('dIntTotal').textContent=F0(totalAllInt);
+
+  document.getElementById('dProg').style.width=Math.min(pct,100)+'%';
+  document.getElementById('dPct').textContent='已还 '+pct.toFixed(1)+'%';
+  document.getElementById('dRemainLabel').textContent='剩余 '+F0(tR);
+
+  const bSch=biz.remain>0?genSchedule(biz.remain,biz.monthly,biz.rate,biz.periods,nextBizM):[];
+  const gSch=gjj.remain>0?genSchedule(gjj.remain,gjj.monthly,gjj.rate,gjj.periods,nextGjjM):[];
+
+  renderLoanCard('biz',rawData.baseline.biz.total,biz,bSch,rawData,timeline);
+  renderLoanCard('gjj',rawData.baseline.gjj.total,gjj,gSch,rawData,timeline);
+
+  renderMilestones(rawData,biz,gjj,tPaid,tR,pct,bSch,gSch);
+
+  renderForecast(biz,gjj,bSch,gSch);
+  renderChart(biz,gjj,bSch,gSch);
+  validateDisplay(rawData,biz,gjj,bSch,gSch,poff);
+}
+
+function getNextPayMonth(data,type){
+  const now=new Date();
+  const day=type==='biz'?(data.bizPayDay||12):(data.gjjPayDay||15);
+  if(now.getDate()<day)return YM(now.getFullYear(),now.getMonth()+1);
+  const next=new Date(now.getFullYear(),now.getMonth()+1,1);
+  return YM(next.getFullYear(),next.getMonth()+1);
+}
+
+function updateDateBar(data){
+  const now=new Date();
+  const wd=['日','一','二','三','四','五','六'];
+  document.getElementById('todayBar').innerHTML=`<b>${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日</b> 周${wd[now.getDay()]}`;
+  const bizDay=data.bizPayDay||12,gjjDay=data.gjjPayDay||15;
+  let nextDay=Math.min(bizDay,gjjDay),label=nextDay===bizDay?'商贷':'公积金';
+  if(bizDay===gjjDay)label='还款';
+  let left;
+  if(now.getDate()<nextDay)left=nextDay-now.getDate();
+  else left=Math.ceil((new Date(now.getFullYear(),now.getMonth()+1,nextDay)-now)/(864e5));
+  const el=document.getElementById('countdown');
+  el.style.background=left<=3?'#FEE2E2':left<=7?'#FEF3C7':'';
+  el.style.color=left<=3?'#DC2626':left<=7?'#92400E':'';
+  el.textContent=left===0?label+'日 今天扣款':label+'日 还有'+left+'天';
+}
+
+function renderLoanCard(type,total,loan,sch,rawData,timeline){
+  const wrap=document.getElementById(type+'CardWrap');
+  if(total<=0){wrap.style.display='none';return}
+  wrap.style.display='';
+  const isBiz=type==='biz';
+  const paid=total-loan.remain;
+  const lpct=total>0?paid/total*100:0;
+
+  document.getElementById(type+'Rate2').textContent='利率 '+loan.rate+'%';
+  document.getElementById(type+'Orig').textContent=F0(total);
+  document.getElementById(type+'Paid').textContent=F0(paid);
+  document.getElementById(type+'Rem').textContent=F0(loan.remain);
+  document.getElementById(type+'Prog').style.width=Math.min(lpct,100)+'%';
+  document.getElementById(type+'Pct').textContent='已还 '+lpct.toFixed(1)+'%';
+  document.getElementById(type+'PeriodInfo').textContent=loan.periods+'期（'+P2T(loan.periods)+'）';
+
+  // 利息统计
+  renderIntStats(type,total,loan,rawData,timeline);
+
+  const curEl=document.getElementById(type+'Current');
+  if(sch.length>0){
+    const s=sch[0];
+    const now=new Date();
+    const payDay=isBiz?(rawData.bizPayDay||12):(rawData.gjjPayDay||15);
+    const pending=now.getDate()<payDay||(s.dk>YM(now.getFullYear(),now.getMonth()+1));
+    const payDateStr=s.date.replace('月','月'+payDay+'日');
+    curEl.innerHTML=`
+      <div class="lc-cur-title"><span>下期还款 · ${payDateStr}</span><span class="badge ${pending?'pending':'done'}">${pending?'待扣款':'已扣款'}</span></div>
+      <div class="lc-cur-grid">
+        <div class="cg"><div class="cg-l">本金</div><div class="cg-v">${F(s.prin)}</div></div>
+        <div class="cg"><div class="cg-l">利息</div><div class="cg-v">${F(s.int)}</div></div>
+        <div class="cg"><div class="cg-l">月供</div><div class="cg-v" style="font-size:15px;color:${isBiz?'var(--biz)':'var(--gjj)'}">${F(s.pay)}</div></div>
+        <div class="cg"><div class="cg-l">还款后余额</div><div class="cg-v" style="font-size:15px;font-weight:800">${F(s.rem)}</div></div>
+      </div>`;
+  }else curEl.innerHTML='<div style="text-align:center;color:var(--ok);font-weight:600;font-size:14px">已还清！</div>';
+
+  const schEl=document.getElementById(type+'Sch');
+  const showN=schEl.dataset.show?parseInt(schEl.dataset.show):12;
+  const disp=sch.slice(0,showN);
+  const cc=isBiz?'cur':'gcur';
+  schEl.innerHTML=sch.length?`
+    <table class="sch-table"><thead><tr><th style="text-align:left">期数</th><th>本金</th><th>利息</th><th>月供</th><th>剩余本金</th></tr></thead><tbody>
+    ${disp.map((s,i)=>`<tr class="${i===0?cc:''}"><td>第${s.p}期<br>${s.date}</td><td>${F(s.prin)}</td><td>${F(s.int)}</td><td>${F(s.pay)}</td><td>${F(s.rem)}</td></tr>`).join('')}
+    </tbody></table>
+    ${showN<sch.length?`<div class="sch-load-more" onclick="loadMore('${type}',${showN+36})">加载更多（共${sch.length}期）</div>`:`<div style="text-align:center;padding:10px;font-size:11px;color:var(--t3)">共${sch.length}期</div>`}`:'';
+
+  // 已还记录
+  renderHistoryTable(type,rawData,timeline||[]);
+}
+
+function renderHistoryTable(type,rawData,timeline){
+  const histEl=document.getElementById(type+'HistSch');
+  const labelEl=document.getElementById(type+'HistLabel');
+  const rows=[];
+  const asOf=rawData.asOfMonth;
+
+  // 收集所有用户事件ID（用于判断可否删除）
+  const userIds=new Set((rawData.events||[]).map(e=>String(e.id)));
+
+  // 1) 基线前的历史事件（display-only，已计入基线余额）
+  (rawData.events||[]).filter(e=>e.target===type&&e.date.substring(0,7)<=asOf).forEach(e=>{
+    if(e.type==='auto_hist'){
+      rows.push({date:e.date,label:'月供',prin:e.prin,int:e.int,pay:e.amount,rem:e.remain,cls:''});
+    }else if(e.type==='prepay'){
+      const rem=e.remainAfter!=null?e.remainAfter:(e._rolledRemain!=null?e._rolledRemain:null);
+      rows.push({date:e.date,label:'提前还款(历史)',prin:e.amount,int:null,pay:e.amount,rem,cls:'row-prepay',note:e.note,eid:e.id});
+    }else if(e.type==='rate'){
+      rows.push({date:e.date,label:'利率调整(历史)',prin:null,int:null,pay:null,rem:null,cls:'row-hist',note:e.note,eid:e.id});
+    }
+  });
+
+  // 2) computeState 时间线中本贷种的事件
+  timeline.forEach(e=>{
+    const match=(e.type==='auto'&&e.loanType===type)||((e.type==='prepay'||e.type==='correction'||e.type==='rate')&&e.target===type);
+    if(!match)return;
+    const rem=type==='biz'?e._bizRem:e._gjjRem;
+    if(e.type==='auto'){
+      rows.push({date:e.date,label:'月供',prin:e.prin,int:e.int,pay:e.amount,rem,cls:''});
+    }else if(e.type==='prepay'){
+      const modeL=e.mode==='reduce'?'减月供':'缩期限';
+      rows.push({date:e.date,label:'提前还款('+modeL+')',prin:e.amount,int:null,pay:e.amount,rem,cls:'row-prepay',note:e.note,eid:e.id});
+    }else if(e.type==='correction'){
+      rows.push({date:e.date,label:'余额校正',prin:null,int:null,pay:null,rem:e.correctRemain||rem,cls:'row-hist',eid:e.id});
+    }else if(e.type==='rate'){
+      rows.push({date:e.date,label:'利率'+e._oldRate+'→'+e.newRate+'%',prin:null,int:null,pay:null,rem,cls:'row-hist',eid:e.id});
+    }
+  });
+
+  rows.sort((a,b)=>a.date.localeCompare(b.date));
+  if(labelEl)labelEl.textContent='已还记录'+(rows.length?'('+rows.length+'条)':'');
+
+  if(!rows.length){histEl.innerHTML='<div style="text-align:center;padding:16px;color:var(--t3);font-size:12px">暂无已还记录，点击底部「+ 记录」添加</div>';return}
+
+  const fd=d=>d.replace(/(\d{4})-(\d{2})-(\d{2})/,'$1年$2月$3日').replace(/(\d{4})-(\d{2})/,'$1年$2月');
+  histEl.innerHTML=`
+    <table class="sch-table"><thead><tr><th style="text-align:left">日期</th><th>本金</th><th>利息</th><th>还款额</th><th>剩余本金</th></tr></thead><tbody>
+    ${rows.map(r=>{
+      const canDel=r.eid&&userIds.has(String(r.eid));
+      const delBtn=canDel?` <button onclick="delEvt('${r.eid}')" style="font-size:9px;padding:0 4px;border:1px solid #FECACA;background:#fff;border-radius:3px;cursor:pointer;color:var(--err)">删除</button>`:'';
+      return`<tr class="${r.cls}"><td>${fd(r.date)}${r.label!=='月供'?'<br><span style="font-size:9px;color:var(--pri)">'+r.label+'</span>':''}${r.note?'<br><span style="font-size:9px;color:var(--t3)">'+r.note+'</span>':''}${delBtn}</td><td>${r.prin!=null?F(r.prin):'-'}</td><td>${r.int!=null?F(r.int):'-'}</td><td>${r.pay!=null?F(r.pay):'-'}</td><td>${r.rem!=null?F(r.rem):'-'}</td></tr>`;
+    }).join('')}
+    </tbody></table>
+    <div style="text-align:center;padding:10px;font-size:11px;color:var(--t3)">共${rows.length}条记录</div>`;
+}
+
+function renderIntStats(type,total,loan,rawData,timeline){
+  const el=document.getElementById(type+'IntStats');
+  if(total<=0||loan.remain<=0){el.style.display='none';return}
+  el.style.display='';
+
+  // 剩余利息（精确：还款计划中的全部利息）
+  const remainInt=R2(loan.periods*loan.monthly-loan.remain);
+
+  // 已付利息 = 总已还款 - 已还本金
+  // 总已还款 = 月供 × 已还月数 + 提前还款金额
+  const init=rawData.initDate||'2023-12';
+  const asOf=rawData.asOfMonth;
+  const[iy,im]=init.split('-').map(Number);
+  const[ay,am]=asOf.split('-').map(Number);
+  let monthsPaid=(ay-iy)*12+(am-im); // baseline已含的月数
+
+  // 加上timeline中当月的自动扣款
+  monthsPaid+=timeline.filter(e=>e.type==='auto'&&e.loanType===type).length;
+
+  // 提前还款总额
+  const prepaySum=(rawData.events||[]).filter(e=>e.type==='prepay'&&e.target===type).reduce((s,e)=>s+(e.amount||0),0);
+
+  // 月供可能变过，用加权近似：已知记录用实际值，其余用当前月供
+  let recordedPayments=0,recordedCount=0;
+  (rawData.events||[]).filter(e=>e.type==='auto_hist'&&e.target===type).forEach(e=>{recordedPayments+=e.amount||0;recordedCount++});
+  timeline.filter(e=>e.type==='auto'&&e.loanType===type).forEach(e=>{recordedPayments+=e.amount||0;recordedCount++});
+  const unrecordedMonths=Math.max(0,monthsPaid-recordedCount);
+  const totalPayments=recordedPayments+unrecordedMonths*loan.monthly+prepaySum;
+
+  const principalPaid=total-loan.remain;
+  const paidInt=R2(Math.max(0,totalPayments-principalPaid));
+  const totalInt=R2(paidInt+remainInt);
+  const totalRepay=R2(totalPayments+remainInt+loan.remain); // 总还款额（含未来）
+  const intRatio=totalRepay>0?(totalInt/totalRepay*100).toFixed(1):'0';
+
+  el.innerHTML=`
+    <div class="ii"><div class="ii-l">已付利息</div><div class="ii-v">${F0(paidInt)}</div></div>
+    <div class="ii"><div class="ii-l">剩余利息</div><div class="ii-v neg">${F0(remainInt)}</div></div>
+    <div class="ii"><div class="ii-l">利息总额</div><div class="ii-v">${F0(totalInt)}</div></div>
+    <div class="ii"><div class="ii-l">利息占比</div><div class="ii-v">${intRatio}%</div></div>`;
+}
+
+// 关键命名节点
+const JMAJOR=[
+  {pct:0,icon:'🏠',name:'起步'},{pct:25,icon:'🌿',name:'扎根'},
+  {pct:50,icon:'🌳',name:'过半'},{pct:75,icon:'🔥',name:'冲刺'},{pct:100,icon:'🎉',name:'自由'}
+];
+// 5%阶段描述
+function stageDesc(p){
+  if(p>=100)return'房贷全部还清！';if(p>=95)return'胜利在望！';if(p>=90)return'最后冲刺';
+  if(p>=75)return'进入冲刺阶段';if(p>=50)return'已过半程！';if(p>=25)return'稳步前行';
+  if(p>=10)return'初见成效';return'踏上征程';
+}
+function stageIcon(p){
+  const m=JMAJOR.filter(j=>j.pct<=p);return m.length?m[m.length-1].icon:'🏠';
+}
+function stageName(p){
+  const m=JMAJOR.filter(j=>j.pct<=p);return m.length?m[m.length-1].name:'起步';
+}
+
+function renderMilestones(rawData,biz,gjj,tPaid,tR,pct,bSch,gSch){
+  const el=document.getElementById('milestones');
+  const tL=tPaid+tR;
+  const curStage=Math.floor(pct/5)*5; // 当前已达成的5%阶段
+  const nextStage=Math.min(curStage+5,100);
+  const nextGap=nextStage<=100?R2(tL*nextStage/100-tPaid):0;
+  const hasPrepay=(rawData.events||[]).some(e=>e.type==='prepay');
+  const prepayTotal=hasPrepay?(rawData.events||[]).filter(e=>e.type==='prepay').reduce((s,e)=>s+(e.amount||0),0):0;
+
+  // 生成5%刻度线
+  let ticks='';
+  for(let i=5;i<100;i+=5){
+    const done=pct>=i;
+    ticks+=`<div class="j-tick${done?' done':''}" style="left:${i}%"></div>`;
+  }
+
+  // 关键节点
+  const majors=JMAJOR.map(m=>{
+    const done=pct>=m.pct;
+    return`<div class="j-major${done?' done':''}" style="left:${m.pct}%" onclick="${done?'showAchieve('+m.pct+','+R2(pct)+','+R2(tPaid)+','+R2(tR)+','+prepayTotal+')':''}">
+      <div class="jm-icon">${m.icon}</div>
+      <div class="jm-lbl">${m.name} ${m.pct}%</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML=`
+    <div class="j-bar">
+      <div class="j-bar-fill" style="width:${Math.min(pct,100)}%"></div>
+      ${ticks}
+      ${majors}
+      <div class="j-cur-dot" style="left:${Math.min(pct,100)}%"><span style="filter:brightness(10)">${stageIcon(pct)}</span>
+        <div class="j-pct">${pct.toFixed(1)}%</div>
+      </div>
+    </div>
+    <div class="j-info">
+      当前：<b>${stageIcon(pct)} ${stageName(pct)}</b> · 第 <b>${curStage}%</b> 阶段 · ${stageDesc(pct)}<br>
+      ${nextStage<=100?`下一阶段 <b>${nextStage}%</b>${JMAJOR.find(m=>m.pct===nextStage)?'（'+JMAJOR.find(m=>m.pct===nextStage).icon+' '+JMAJOR.find(m=>m.pct===nextStage).name+'）':''}，还需还本金 <b>${F0(nextGap)}</b>`:'恭喜还清！'}
+      ${hasPrepay?` · 已提前还款 <b>${F0(prepayTotal)}</b>`:''}
+    </div>`;
+}
+
+// ============================================================
+//  成就分享卡片
+// ============================================================
+function showAchieve(stagePct,pct,tPaid,tR,prepay){
+  const cv=document.getElementById('achieveCanvas');
+  const dpr=window.devicePixelRatio||2;
+  const W=375,H=560;
+  cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const icon=stageIcon(stagePct),name=stageName(stagePct),desc=stageDesc(stagePct);
+  const now=new Date();const dateStr=now.getFullYear()+'.'+String(now.getMonth()+1).padStart(2,'0')+'.'+String(now.getDate()).padStart(2,'0');
+
+  // === 背景: 深色渐变 ===
+  const bg=ctx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,'#0F172A');bg.addColorStop(0.4,'#1E1B4B');bg.addColorStop(1,'#0F172A');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+
+  // 装饰：多层光晕圆
+  [[W/2,-60,200,'rgba(99,102,241,.15)'],[60,H-80,140,'rgba(139,92,246,.12)'],[W-40,200,100,'rgba(59,130,246,.1)']].forEach(([x,y,r,c])=>{
+    const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,c);g.addColorStop(1,'transparent');
+    ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2);
+  });
+
+  // 装饰：小点阵
+  ctx.globalAlpha=0.15;
+  for(let i=0;i<30;i++){
+    const x=Math.random()*W,y=Math.random()*H,s=Math.random()*2+1;
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y,s,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+
+  // 顶部标签
+  ctx.fillStyle='rgba(255,255,255,.5)';ctx.font='12px -apple-system,sans-serif';ctx.textAlign='center';
+  ctx.fillText('MORTGAGE FREEDOM JOURNEY',W/2,36);
+
+  // === 主卡片: 毛玻璃风格 ===
+  const cx=24,cy=54,cw=W-48,ch=440;
+  // 卡片背景
+  ctx.fillStyle='rgba(255,255,255,.08)';
+  roundRect(ctx,cx,cy,cw,ch,16);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=1;
+  roundRect(ctx,cx,cy,cw,ch,16);ctx.stroke();
+
+  // 成就图标 - 大圆背景
+  const iconY=cy+56;
+  const iconG=ctx.createRadialGradient(W/2,iconY,0,W/2,iconY,44);
+  iconG.addColorStop(0,'rgba(99,102,241,.3)');iconG.addColorStop(1,'rgba(99,102,241,.05)');
+  ctx.fillStyle=iconG;ctx.beginPath();ctx.arc(W/2,iconY,44,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(W/2,iconY,44,0,Math.PI*2);ctx.stroke();
+  ctx.font='44px serif';ctx.textAlign='center';ctx.fillText(icon,W/2,iconY+16);
+
+  // 成就文字
+  ctx.fillStyle='#fff';ctx.font='bold 26px -apple-system,sans-serif';
+  ctx.fillText(name,W/2,iconY+66);
+  ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='13px -apple-system,sans-serif';
+  ctx.fillText(desc,W/2,iconY+90);
+
+  // === 进度条 ===
+  const bx=cx+28,by=iconY+110,bw=cw-56,bh=8;
+  ctx.fillStyle='rgba(255,255,255,.1)';roundRect(ctx,bx,by,bw,bh,4);ctx.fill();
+  const fw=Math.min(pct/100,1)*bw;
+  if(fw>4){
+    const pg=ctx.createLinearGradient(bx,0,bx+fw,0);pg.addColorStop(0,'#818CF8');pg.addColorStop(1,'#C084FC');
+    ctx.fillStyle=pg;roundRect(ctx,bx,by,fw,bh,4);ctx.fill();
+  }
+  // 5%刻度
+  ctx.fillStyle='rgba(255,255,255,.15)';
+  for(let i=5;i<100;i+=5){ctx.fillRect(bx+bw*i/100,by,1,bh)}
+  // 百分比
+  ctx.fillStyle='#C084FC';ctx.font='bold 15px -apple-system,sans-serif';ctx.textAlign='center';
+  ctx.fillText(pct.toFixed(1)+' %',W/2,by-10);
+
+  // === 数据卡片 ===
+  const stats=[{l:'已还本金',v:F0(tPaid),c:'#34D399'},{l:'剩余本金',v:F0(tR),c:'#F87171'},{l:'还款进度',v:pct.toFixed(1)+'%',c:'#C084FC'}];
+  if(prepay>0)stats.push({l:'提前还款',v:F0(prepay),c:'#FBBF24'});
+  const sy=by+30,cardH=56,cardGap=8,cardW=(cw-32-(stats.length-1)*cardGap)/stats.length;
+  stats.forEach((s,i)=>{
+    const sx=cx+16+i*(cardW+cardGap);
+    ctx.fillStyle='rgba(255,255,255,.06)';roundRect(ctx,sx,sy,cardW,cardH,8);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.45)';ctx.font='9px -apple-system,sans-serif';ctx.textAlign='center';
+    ctx.fillText(s.l,sx+cardW/2,sy+18);
+    ctx.fillStyle=s.c;ctx.font='bold 14px -apple-system,sans-serif';
+    ctx.fillText(s.v,sx+cardW/2,sy+40);
+  });
+
+  // === 旅程节点 ===
+  const jy=sy+cardH+24;
+  const jx1=cx+40,jx2=cx+cw-40,jw=jx2-jx1;
+  ctx.fillStyle='rgba(255,255,255,.08)';ctx.fillRect(jx1,jy+7,jw,2);
+  const jpw=jw*Math.min(pct/100,1);
+  if(jpw>0){const jg=ctx.createLinearGradient(jx1,0,jx1+jpw,0);jg.addColorStop(0,'#818CF8');jg.addColorStop(1,'#C084FC');ctx.fillStyle=jg;ctx.fillRect(jx1,jy+7,jpw,2)}
+  JMAJOR.forEach(jm=>{
+    const jx=jx1+jw*jm.pct/100;
+    const done=pct>=jm.pct;
+    ctx.font=(done?'16px':'11px')+' serif';ctx.textAlign='center';ctx.globalAlpha=done?1:0.25;
+    ctx.fillText(jm.icon,jx,jy+6);
+    ctx.font='8px -apple-system,sans-serif';ctx.fillStyle='rgba(255,255,255,.5)';
+    ctx.fillText(jm.pct+'%',jx,jy+20);
+  });
+  ctx.globalAlpha=1;
+
+  // === 底部品牌 ===
+  ctx.fillStyle='rgba(255,255,255,.25)';ctx.font='11px -apple-system,sans-serif';ctx.textAlign='center';
+  ctx.fillText('房贷消除计划 · '+dateStr,W/2,cy+ch-16);
+
+  // 底部提示（画布外）
+  ctx.fillStyle='rgba(255,255,255,.4)';ctx.font='10px -apple-system,sans-serif';
+  ctx.fillText('长按保存 · 分享你的还款进度',W/2,H-16);
+
+  document.getElementById('achieveModal').classList.add('show');
+}
+
+// 圆角矩形辅助
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+
+function saveAchieveImg(){
+  const cv=document.getElementById('achieveCanvas');
+  const a=document.createElement('a');
+  a.href=cv.toDataURL('image/png');
+  a.download='还款成就_'+new Date().toISOString().slice(0,10)+'.png';
+  a.click();
+}
+
+function loadMore(t,n){document.getElementById(t+'Sch').dataset.show=n;render()}
+function toggleSch(t){
+  const el=document.getElementById(t+'Sch');
+  el.classList.toggle('open');
+  const arrow=document.getElementById(t+'Arrow');
+  if(arrow)arrow.closest('.lc-expand').classList.toggle('open');
+}
+
+function renderForecast(biz,gjj,bS,gS){
+  const g=document.getElementById('fcGrid');
+  const now=new Date(),cM=now.getMonth(),cY=now.getFullYear();
+  const tN=biz.remain+gjj.remain;
+  if(tN<=0){g.innerHTML='<div style="text-align:center;padding:16px;color:var(--ok);font-weight:600;grid-column:1/-1">已全部还清！</div>';return}
+  const toYE=11-cM;
+  const pts=[{m:3,l:'3个月后'},{m:6,l:'半年后'}];
+  if(toYE>0&&toYE!==3&&toYE!==6)pts.push({m:toYE,l:cY+'年底'});
+  pts.push({m:toYE+12,l:(cY+1)+'年底'});
+  const u=[];const seen=new Set();
+  for(const p of pts){if(!seen.has(p.m)&&u.length<4){seen.add(p.m);u.push(p)}}
+  g.innerHTML=u.map(p=>{
+    let bR=bS.length>=p.m?bS[p.m-1].rem:bS.length?bS[bS.length-1].rem:0;
+    let gR=gS.length>=p.m?gS[p.m-1].rem:gS.length?gS[gS.length-1].rem:0;
+    const fut=bR+gR,red=tN-fut;
+    const redPct=tN>0?(red/tN*100).toFixed(1):'0';
+    return`<div class="fc"><div class="fl">${p.l}</div><div class="fv">${F0(fut)}</div><div class="fs">↓ ${F0(red)}（-${redPct}%）</div></div>`;
+  }).join('');
+}
+
+let chartRange=12;
+function setChartRange(el){
+  document.querySelectorAll('.ctab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  chartRange=parseInt(el.dataset.r)||0;
+  // 用缓存数据重绘，避免全量render
+  if(window._lastChart)renderChart(...window._lastChart);
+}
+
+let _chartS=null; // chart state for tooltip interaction
+
+function renderChart(biz,gjj,bS,gS){
+  window._lastChart=[biz,gjj,bS,gS];
+  const cv=document.getElementById('chart'),ctx=cv.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  const w=cv.parentElement.clientWidth-28,h=180;
+  cv.width=w*dpr;cv.height=h*dpr;cv.style.width=w+'px';cv.style.height=h+'px';
+  ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
+  const totalP=Math.max(bS.length,gS.length);if(totalP<=0)return;
+  const showP=chartRange>0?Math.min(chartRange,totalP):totalP;
+
+  const pts=[{m:0,v:biz.remain+gjj.remain}];
+  const step=Math.max(1,Math.floor(showP/60));
+  for(let i=step;i<=showP;i+=step)pts.push({m:i,v:(i<=bS.length?bS[i-1].rem:0)+(i<=gS.length?gS[i-1].rem:0)});
+  if(pts[pts.length-1].m!==showP){
+    const lastV=(showP<=bS.length?bS[showP-1].rem:0)+(showP<=gS.length?gS[showP-1].rem:0);
+    pts.push({m:showP,v:lastV});
+  }
+
+  const pL=50,pR=12,pT=12,pB=28,cW=w-pL-pR,cH=h-pT-pB;
+  const rawMax=Math.max(...pts.map(p=>p.v));if(rawMax<=0)return;
+  const rawMin=Math.min(...pts.map(p=>p.v));
+  // 智能Y轴：如果变化幅度小于20%，放大显示实际变化区间
+  const range=rawMax-rawMin;
+  const pad=range>0?range*0.2:rawMax*0.05;
+  const minV=range/rawMax<0.2?Math.max(0,rawMin-pad):0;
+  const maxV=range/rawMax<0.2?rawMax+pad:rawMax;
+
+  // 网格
+  ctx.strokeStyle='#F1F5F9';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=pT+cH*i/4;const gv=maxV-(maxV-minV)*i/4;ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(w-pR,y);ctx.stroke();ctx.fillStyle='#94A3B8';ctx.font='10px sans-serif';ctx.textAlign='right';const lbl=gv/10000;ctx.fillText((lbl>=100?lbl.toFixed(0):lbl.toFixed(1))+'万',pL-6,y+4)}
+
+  // 曲线
+  const vToY=v=>pT+(1-(v-minV)/(maxV-minV))*cH;
+  ctx.beginPath();pts.forEach((p,i)=>{const x=pL+(p.m/showP)*cW,y=vToY(p.v);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});
+  ctx.strokeStyle='#4F46E5';ctx.lineWidth=2;ctx.stroke();
+
+  // 填充
+  const grad=ctx.createLinearGradient(0,pT,0,pT+cH);grad.addColorStop(0,'rgba(79,70,229,.12)');grad.addColorStop(1,'rgba(79,70,229,0)');
+  ctx.lineTo(pL+(pts[pts.length-1].m/showP)*cW,pT+cH);ctx.lineTo(pL,pT+cH);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+
+  // 起点圆点
+  ctx.beginPath();ctx.arc(pL,vToY(pts[0].v),4,0,Math.PI*2);ctx.fillStyle='#4F46E5';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+
+  // 终点圆点+标注
+  const lastPt=pts[pts.length-1];
+  if(lastPt.v>0){
+    const lx=pL+(lastPt.m/showP)*cW,ly=vToY(lastPt.v);
+    ctx.beginPath();ctx.arc(lx,ly,3,0,Math.PI*2);ctx.fillStyle='#4F46E5';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.fillStyle='#4F46E5';ctx.font='bold 10px sans-serif';ctx.textAlign='center';
+    ctx.fillText(F0(lastPt.v),lx,ly-8);
+  }
+
+  // X轴标签
+  ctx.fillStyle='#94A3B8';ctx.font='10px sans-serif';ctx.textAlign='center';
+  const now=new Date();
+  const labelN=showP<=24?Math.min(showP,6):showP<=60?5:4;
+  for(let i=0;i<=labelN;i++){const m=Math.round(showP*i/labelN);const d=new Date(now.getFullYear(),now.getMonth()+m);ctx.fillText(d.getFullYear()+'.'+(d.getMonth()+1),pL+(m/showP)*cW,h-6)}
+
+  // 保存基础图像 & 交互状态
+  _chartS={pts,pL,pR,pT,pB,cW,cH,maxV,minV,showP,w,h,dpr,baseImg:ctx.getImageData(0,0,cv.width,cv.height)};
+}
+
+// 图表触摸/鼠标交互
+(function(){
+  const cv=document.getElementById('chart');
+  if(!cv)return;
+  function getX(e){
+    const r=cv.getBoundingClientRect();
+    const clientX=e.touches?e.touches[0].clientX:e.clientX;
+    return clientX-r.left;
+  }
+  function showTip(rawX){
+    if(!_chartS)return;
+    const{pts,pL,pT,pB,cW,cH,maxV,minV,showP,w,h,dpr,baseImg}=_chartS;
+    const ctx=cv.getContext('2d');
+    // 还原基础图像
+    ctx.putImageData(baseImg,0,0);
+    ctx.scale(dpr,dpr);
+
+    // 将触摸x映射到月份
+    const mRaw=(rawX-pL)/cW*showP;
+    // 找最近的数据点
+    let near=pts[0],minD=1e9;
+    for(const p of pts){const d=Math.abs(p.m-mRaw);if(d<minD){minD=d;near=p}}
+    const px=pL+(near.m/showP)*cW;
+    const py=pT+(1-(near.v-minV)/(maxV-minV))*cH;
+
+    // 竖线
+    ctx.setLineDash([3,3]);ctx.strokeStyle='rgba(79,70,229,.4)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(px,pT);ctx.lineTo(px,pT+cH);ctx.stroke();ctx.setLineDash([]);
+
+    // 圆点
+    ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fillStyle='#4F46E5';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+
+    // 气泡
+    const now=new Date();
+    const md=new Date(now.getFullYear(),now.getMonth()+near.m);
+    const txt1=md.getFullYear()+'年'+(md.getMonth()+1)+'月';
+    const txt2=F0(near.v);
+    ctx.font='bold 11px -apple-system,sans-serif';
+    const tw=Math.max(ctx.measureText(txt1).width,ctx.measureText(txt2).width)+16;
+    const th=36,tr=6;
+    let bx=px-tw/2,by=py-th-12;
+    if(bx<pL)bx=pL;if(bx+tw>w-4)bx=w-4-tw;
+    if(by<2)by=py+12; // 如果上方空间不够，显示在下方
+
+    // 气泡背景
+    ctx.fillStyle='rgba(30,41,59,.92)';
+    ctx.beginPath();ctx.moveTo(bx+tr,by);ctx.lineTo(bx+tw-tr,by);ctx.quadraticCurveTo(bx+tw,by,bx+tw,by+tr);
+    ctx.lineTo(bx+tw,by+th-tr);ctx.quadraticCurveTo(bx+tw,by+th,bx+tw-tr,by+th);
+    ctx.lineTo(bx+tr,by+th);ctx.quadraticCurveTo(bx,by+th,bx,by+th-tr);
+    ctx.lineTo(bx,by+tr);ctx.quadraticCurveTo(bx,by,bx+tr,by);ctx.fill();
+
+    // 气泡文字
+    ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='10px -apple-system,sans-serif';ctx.textAlign='center';
+    ctx.fillText(txt1,bx+tw/2,by+14);
+    ctx.fillStyle='#fff';ctx.font='bold 12px -apple-system,sans-serif';
+    ctx.fillText(txt2,bx+tw/2,by+29);
+
+    ctx.setTransform(1,0,0,1,0,0); // reset transform
+  }
+  function clearTip(){
+    if(!_chartS)return;
+    const ctx=cv.getContext('2d');
+    ctx.putImageData(_chartS.baseImg,0,0);
+    ctx.setTransform(1,0,0,1,0,0);
+  }
+  cv.addEventListener('touchstart',e=>{e.preventDefault();showTip(getX(e))},{passive:false});
+  cv.addEventListener('touchmove',e=>{e.preventDefault();showTip(getX(e))},{passive:false});
+  cv.addEventListener('touchend',clearTip);
+  cv.addEventListener('mousemove',e=>showTip(getX(e)));
+  cv.addEventListener('mouseleave',clearTip);
+})();
+
+// ============================================================
+//  数据自检 & 响应式设置
+// ============================================================
+function validateLoan(label,bl,cur){
+  const warns=[],fixes=[];
+  if(bl.total<=0)return{warns,fixes};
+  if(bl.remain>bl.total)warns.push(label+'：基线余额('+F0(bl.remain)+')>总额('+F0(bl.total)+')');
+  // 以月供为权威值，反算期数是否匹配
+  if(bl.remain>0&&bl.rate>0&&bl.monthly>0&&bl.periods>0){
+    const expectedP=recalcPeriods(bl.remain,bl.monthly,bl.rate);
+    if(Math.abs(expectedP-bl.periods)>1){
+      warns.push(label+'基线：按月供'+F(bl.monthly)+'反算期数应为'+expectedP+'，当前'+bl.periods);
+      fixes.push({type:'baseline_periods',label,target:label==='商贷'?'biz':'gjj',value:expectedP,msg:'校正'+label+'期数为'+expectedP});
+    }
+  }
+  const paid=bl.total-cur.remain;
+  if(paid<-0.01)warns.push(label+'：已还本金为负('+F(paid)+')');
+  if(cur.remain<-0.01)warns.push(label+'：当前余额为负('+F(cur.remain)+')');
+  if(cur.remain>0&&cur.periods<=0)warns.push(label+'：有余额但期数为0');
+  // 当前状态校验（以月供为准反算期数）
+  if(cur.remain>0&&cur.rate>0&&cur.monthly>0&&cur.periods>0){
+    const curExpP=recalcPeriods(cur.remain,cur.monthly,cur.rate);
+    if(Math.abs(curExpP-cur.periods)>1){
+      warns.push(label+'当前：按月供'+F(cur.monthly)+'反算期数应为'+curExpP+'，当前'+cur.periods);
+    }
+  }
+  return{warns,fixes};
+}
+
+function validateDisplay(rawData,biz,gjj,bSch,gSch,poff){
+  const bar=document.getElementById('validBar');
+  const allWarns=[],allFixes=[],allOK=[];
+  const b=validateLoan('商贷',rawData.baseline.biz,biz);
+  const g=validateLoan('公积金',rawData.baseline.gjj,gjj);
+  allWarns.push(...b.warns,...g.warns);
+  allFixes.push(...b.fixes,...g.fixes);
+
+  // 1) 总额 = 已还 + 余额
+  const tL=rawData.baseline.biz.total+rawData.baseline.gjj.total;
+  const tR=biz.remain+gjj.remain;
+  const tPaid=tL-tR;
+  if(tPaid<-0.01)allWarns.push('总已还本金为负('+F(tPaid)+')');
+  else allOK.push('总额=已还+余额');
+
+  // 2) 月供·期数·余额一致性（无warn说明通过）
+  if(b.warns.length===0&&g.warns.length===0)allOK.push('月供·期数·余额一致');
+
+  // 3) 还款计划条目数 = 剩余期数
+  let schOK=true;
+  if(bSch.length>0&&bSch.length!==biz.periods){allWarns.push('商贷：计划表'+bSch.length+'期≠剩余'+biz.periods+'期');schOK=false}
+  if(gSch.length>0&&gSch.length!==gjj.periods){allWarns.push('公积金：计划表'+gSch.length+'期≠剩余'+gjj.periods+'期');schOK=false}
+
+  // 4) 还款计划末期余额应为0
+  if(bSch.length>0){const lr=bSch[bSch.length-1].rem;if(lr>1){allWarns.push('商贷：计划末期余额'+F(lr)+'≠0');schOK=false}}
+  if(gSch.length>0){const lr=gSch[gSch.length-1].rem;if(lr>1){allWarns.push('公积金：计划末期余额'+F(lr)+'≠0');schOK=false}}
+
+  // 5) 预计还清 = 还款计划最后一期月份
+  const maxSch=bSch.length>=gSch.length?bSch:gSch;
+  if(maxSch.length>0&&poff){
+    const lastDate=maxSch[maxSch.length-1].date; // "2052年12月"
+    const poffLabel=poff.getFullYear()+'年'+String(poff.getMonth()+1).padStart(2,'0')+'月';
+    if(lastDate!==poffLabel){allWarns.push('预计还清('+poffLabel+')≠计划末期('+lastDate+')');schOK=false}
+    else allOK.push('预计还清=计划末期');
+  }
+  if(schOK&&(bSch.length>0||gSch.length>0))allOK.push('计划表期数·末期余额正确');
+
+  bar.style.display='';
+  const detail=document.getElementById('validDetail');
+  if(allWarns.length===0){
+    bar.className='valid-bar ok';
+    bar.innerHTML='<span class="vi">数据自检通过</span><span style="font-size:10px;opacity:.5">点击查看</span>';
+    detail.className='valid-detail';
+    detail.innerHTML=allOK.map(s=>'<span>'+s+' ✓</span>').join('');
+  }else{
+    bar.className='valid-bar warn';
+    const fixBtns=allFixes.map((f,i)=>`<button onclick="event.stopPropagation();autoFix(${i})" style="font-size:10px;padding:2px 8px;border:1px solid #991B1B;background:#FEE2E2;border-radius:4px;cursor:pointer;color:#991B1B;margin-left:4px">${f.msg}</button>`).join('');
+    bar.innerHTML='<span class="vi">数据异常('+allWarns.length+'项) — 点击查看</span>'+fixBtns;
+    detail.className='valid-detail show';
+    detail.innerHTML=allWarns.map(w=>'<span style="color:#991B1B">'+w+'</span>').join('');
+    window._validFixes=allFixes;
+  }
+}
+
+function autoFix(idx){
+  const f=window._validFixes&&window._validFixes[idx];
+  if(!f)return;
+  const d=LD();if(!d)return;
+  if(f.type==='baseline_periods'){
+    d.baseline[f.target].periods=f.value;
+    SD(d);render();
+  }
+}
+
+function setupSettingsReactive(){
+  const fields=['iBR','iBRa','iBPV','iBPU','iBM','iGR','iGRa','iGPV','iGPU','iGM','iBT','iGT'];
+  fields.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.removeEventListener('input',onSettingsChange);
+    el.removeEventListener('change',onSettingsChange);
+    el.addEventListener('input',onSettingsChange);
+    el.addEventListener('change',onSettingsChange);
+  });
+  onSettingsChange();
+}
+
+function checkLoanSettings(remainId,rateId,pvId,puId,monthlyId,totalId,hintId){
+  const rem=parseFloat(document.getElementById(remainId).value)||0;
+  const rate=parseFloat(document.getElementById(rateId).value)||0;
+  const pv=parseFloat(document.getElementById(pvId).value)||0;
+  const pu=document.getElementById(puId).value;
+  const periods=pu==='y'?pv*12:pv;
+  const monthly=parseFloat(document.getElementById(monthlyId).value)||0;
+  const total=parseFloat(document.getElementById(totalId).value)||0;
+  const hint=document.getElementById(hintId);
+  const msgs=[];let cls='calc-hint';
+  hint.style.cursor='';hint.onclick=null;
+
+  if(rem>total&&total>0){msgs.push('余额>总额，请检查');cls='calc-hint warn'}
+
+  if(rem>0&&rate>0){
+    if(monthly>0&&periods>0){
+      // 以月供为准反算期数
+      const expectedP=recalcPeriods(rem,monthly,rate);
+      const expectedPMT=calcPMT(rem,rate,periods);
+      const pmtDiff=Math.abs(expectedPMT-monthly);
+      if(Math.abs(expectedP-periods)>1){
+        msgs.push('按月供'+F(monthly)+'反算期数应为'+expectedP+'（当前'+periods+'），理论月供'+F(expectedPMT));
+        cls='calc-hint warn';
+        hint.style.cursor='pointer';
+        hint.onclick=()=>{
+          document.getElementById(pvId).value=expectedP;
+          document.getElementById(puId).value='m';
+          cvtP(hintId==='bizCalcHint'?'biz':'gjj');
+          onSettingsChange();
+        };
+      }else if(pmtDiff<=1){
+        msgs.push('月供·期数·余额·利率一致');
+      }
+    }else if(monthly===0&&periods>0){
+      const expectedPMT=calcPMT(rem,rate,periods);
+      msgs.push('理论月供：'+F(expectedPMT)+'（点击填入）');
+      hint.style.cursor='pointer';
+      hint.onclick=()=>{document.getElementById(monthlyId).value=R2(expectedPMT);onSettingsChange()};
+    }else if(monthly>0&&periods===0){
+      const expectedP=recalcPeriods(rem,monthly,rate);
+      msgs.push('理论期数：'+expectedP+'（点击填入）');
+      hint.style.cursor='pointer';
+      hint.onclick=()=>{document.getElementById(pvId).value=expectedP;document.getElementById(puId).value='m';cvtP(hintId==='bizCalcHint'?'biz':'gjj');onSettingsChange()};
+    }
+  }
+
+  hint.textContent=msgs.join(' | ');
+  hint.className=cls;
+}
+
+function onSettingsChange(){
+  checkLoanSettings('iBR','iBRa','iBPV','iBPU','iBM','iBT','bizCalcHint');
+  checkLoanSettings('iGR','iGRa','iGPV','iGPU','iGM','iGT','gjjCalcHint');
+}
+
+// ============================================================
+//  弹窗 & 事件操作
+// ============================================================
+function openMo(t){
+  if(t==='init'){
+    const d=LD()||getDefault();
+    document.getElementById('iDate').value=d.initDate||'';
+    document.getElementById('iBizDay').value=d.bizPayDay||12;
+    document.getElementById('iGjjDay').value=d.gjjPayDay||15;
+    document.getElementById('iAsOf').value=d.asOfMonth||'';
+    document.getElementById('iBT').value=d.baseline.biz.total||'';
+    document.getElementById('iBR').value=d.baseline.biz.remain||'';
+    document.getElementById('iBM').value=d.baseline.biz.monthly||'';
+    document.getElementById('iBRa').value=d.baseline.biz.rate||'';
+    document.getElementById('iBPV').value=d.baseline.biz.periods||'';document.getElementById('iBPU').value='m';
+    document.getElementById('iGT').value=d.baseline.gjj.total||'';
+    document.getElementById('iGR').value=d.baseline.gjj.remain||'';
+    document.getElementById('iGM').value=d.baseline.gjj.monthly||'';
+    document.getElementById('iGRa').value=d.baseline.gjj.rate||'';
+    document.getElementById('iGPV').value=d.baseline.gjj.periods||'';document.getElementById('iGPU').value='m';
+    cvtP('biz');cvtP('gjj');
+    setupSettingsReactive();
+    document.getElementById('initModal').classList.add('show');
+  }else if(t==='event'){
+    document.getElementById('evtDate').value=new Date().toISOString().slice(0,10);
+    ['preAmt','preRem','rateN','rateM','corrRem','corrM','corrP','evtNote'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('preMode').selectedIndex=0; // 重置为"请选择"
+    document.getElementById('preExtraFields').innerHTML='';
+    document.getElementById('eventModal').classList.add('show');
+  }else if(t==='sim'){
+    initSim();
+    document.getElementById('simModal').classList.add('show');
+  }else if(t==='ocr'){
+    document.getElementById('ocrPreview').style.display='none';
+    document.getElementById('ocrResult').style.display='none';
+    document.getElementById('ocrApplyBtn').style.display='none';
+    document.getElementById('ocrStatus').textContent='';
+    document.getElementById('ocrFile').value='';
+    document.getElementById('ocrModal').classList.add('show');
+  }
+}
+function closeMo(id){document.getElementById(id).classList.remove('show')}
+document.querySelectorAll('.mo').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('show')}));
+
+function cvtP(t){
+  const pre=t==='biz'?'B':'G';
+  const v=parseFloat(document.getElementById('i'+pre+'PV').value);
+  const u=document.getElementById('i'+pre+'PU').value;
+  const h=document.getElementById(t+'PH');
+  if(!v||v<=0){h.textContent='';return}
+  h.textContent=u==='y'?'= '+(v*12)+' 期':'= '+P2T(v);
+}
+
+function saveInit(){
+  const old=LD()||getDefault();
+  const gp=(vid,uid)=>{const v=parseFloat(document.getElementById(vid).value)||0;return document.getElementById(uid).value==='y'?v*12:v};
+  const d={
+    initDate:document.getElementById('iDate').value,
+    bizPayDay:parseInt(document.getElementById('iBizDay').value)||12,
+    gjjPayDay:parseInt(document.getElementById('iGjjDay').value)||15,
+    asOfMonth:document.getElementById('iAsOf').value||old.asOfMonth,
+    baseline:{
+      biz:{total:parseFloat(document.getElementById('iBT').value)||0,remain:parseFloat(document.getElementById('iBR').value)||0,monthly:parseFloat(document.getElementById('iBM').value)||0,rate:parseFloat(document.getElementById('iBRa').value)||0,periods:gp('iBPV','iBPU')},
+      gjj:{total:parseFloat(document.getElementById('iGT').value)||0,remain:parseFloat(document.getElementById('iGR').value)||0,monthly:parseFloat(document.getElementById('iGM').value)||0,rate:parseFloat(document.getElementById('iGRa').value)||0,periods:gp('iGPV','iGPU')}
+    },
+    events:old.events||[]
+  };
+  SD(d);closeMo('initModal');render();
+}
+
+function checkEvtDate(){
+  const d=LD(),hint=document.getElementById('evtDateHint'),v=document.getElementById('evtDate').value;
+  if(!d||!v){hint.textContent='';return}
+  if(v.substring(0,7)<=d.asOfMonth){
+    hint.textContent='历史记录：此日期在基线('+d.asOfMonth+')之前，仅展示不影响计算（已体现在基线余额中）';
+    hint.className='calc-hint';
+  }else{hint.textContent='';hint.className='calc-hint'}
+}
+
+let curET='prepay';
+function swTab(el){
+  document.querySelectorAll('#evtTabs .tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');curET=el.dataset.t;
+  document.getElementById('fPre').style.display=curET==='prepay'?'':'none';
+  document.getElementById('fRate').style.display=curET==='rate'?'':'none';
+  document.getElementById('fCorr').style.display=curET==='correction'?'':'none';
+}
+
+// 还款方式切换 → 显示不同的额外字段
+document.getElementById('preMode').addEventListener('change',function(){
+  const extra=document.getElementById('preExtraFields');
+  if(this.value==='reduce'){
+    extra.innerHTML=`<div class="fg"><label>新月供（元，选填）</label><input type="number" id="preNewM" step="0.01" placeholder="留空则根据剩余本金自动计算"></div>`;
+  }else{
+    extra.innerHTML=`<div style="padding:8px 12px;background:#ECFDF5;border-radius:8px;font-size:12px;color:#065F46;margin-bottom:12px">月供保持不变，系统将自动计算缩短后的剩余期数</div>`;
+  }
+});
+
+function saveEvt(){
+  const d=LD();if(!d){alert('请先设置');return}
+  const date=document.getElementById('evtDate').value;if(!date){alert('请选择日期');return}
+  // 日期校验：不能晚于当前月份
+  const nowYM=YM(new Date().getFullYear(),new Date().getMonth()+1);
+  if(date.substring(0,7)>nowYM){
+    alert('事件日期不能晚于当前月份('+nowYM+')');return;
+  }
+  const note=document.getElementById('evtNote').value;
+  const id=Date.now()+'_'+Math.random().toString(36).substr(2,6);
+  let ev={id,date,type:curET,note};
+
+  if(curET==='prepay'){
+    const mode=document.getElementById('preMode').value;
+    if(!mode){alert('请选择还款方式（缩短期限/减少月供）');return}
+    ev.target=document.getElementById('preTgt').value;
+    ev.amount=parseFloat(document.getElementById('preAmt').value)||0;
+    ev.mode=mode;
+    const rem=document.getElementById('preRem').value;
+    if(rem!=='')ev.remainAfter=parseFloat(rem);
+    // 校验：金额和剩余本金至少填一个
+    if(ev.amount<=0&&ev.remainAfter==null){
+      alert('请填写提前还款金额或还款后剩余本金（至少填一项）');return;
+    }
+    if(mode==='reduce'){
+      const nm=document.getElementById('preNewM').value;
+      if(nm!=='')ev.newMonthly=parseFloat(nm);
+    }
+  }else if(curET==='rate'){
+    ev.target=document.getElementById('rateTgt').value;
+    ev.newRate=parseFloat(document.getElementById('rateN').value)||0;
+    const nm=document.getElementById('rateM').value;if(nm!=='')ev.newMonthly=parseFloat(nm);
+  }else if(curET==='correction'){
+    ev.target=document.getElementById('corrTgt').value;
+    const rem=document.getElementById('corrRem').value;if(rem!=='')ev.correctRemain=parseFloat(rem);
+    const nm=document.getElementById('corrM').value;if(nm!=='')ev.correctMonthly=parseFloat(nm);
+    const np=document.getElementById('corrP').value;if(np!=='')ev.correctPeriods=parseFloat(np);
+  }
+
+  // 记录保存前的进度（用于检测是否跨越阶段）
+  const oldState=computeState(d);
+  const oldTotal=d.baseline.biz.total+d.baseline.gjj.total;
+  const oldPct=oldTotal>0?(oldTotal-oldState.biz.remain-oldState.gjj.remain)/oldTotal*100:0;
+  const oldStage=Math.floor(oldPct/5)*5;
+
+  d.events.push(ev);
+  d.events.sort((a,b)=>a.date.localeCompare(b.date));
+  SD(d);closeMo('eventModal');render();
+
+  // 检测是否跨越了5%阶段，弹出成就卡片
+  if(curET==='prepay'){
+    const newState=computeState(d);
+    const newPct=oldTotal>0?(oldTotal-newState.biz.remain-newState.gjj.remain)/oldTotal*100:0;
+    const newStage=Math.floor(newPct/5)*5;
+    if(newStage>oldStage){
+      const tPaid=oldTotal-newState.biz.remain-newState.gjj.remain;
+      const tR=newState.biz.remain+newState.gjj.remain;
+      const pp=(d.events||[]).filter(e=>e.type==='prepay').reduce((s,e)=>s+(e.amount||0),0);
+      setTimeout(()=>showAchieve(newStage,R2(newPct),R2(tPaid),R2(tR),pp),400);
+    }
+  }
+}
+
+function delEvt(id){
+  if(!confirm('确认删除？删除后余额将自动重算。'))return;
+  const d=LD();
+  const sid=String(id);
+  d.events=d.events.filter(e=>String(e.id)!==sid);
+  SD(d);render();
+}
+
+// ============================================================
+//  提前还款模拟
+// ============================================================
+function initSim(){
+  const d=LD();if(!d)return;
+  const{biz,gjj}=computeState(d);
+  const tgt=document.getElementById('simTgt').value;
+  const loan=tgt==='biz'?biz:gjj;
+  // 快捷金额按钮
+  const qEl=document.getElementById('simQuick');
+  const steps=[5,10,20,30,50];
+  qEl.innerHTML=steps.filter(v=>v*10000<loan.remain).map(v=>
+    `<span onclick="document.getElementById('simAmt').value=${v}0000;this.parentElement.querySelectorAll('span').forEach(s=>s.classList.remove('on'));this.classList.add('on');runSim()">${v}万</span>`
+  ).join('');
+  document.getElementById('simAmt').value='';
+  document.getElementById('simResult').innerHTML='<div style="text-align:center;padding:24px;color:var(--t3);font-size:12px">输入金额或点击快捷按钮，自动对比两种方案</div>';
+  document.getElementById('simApplyBtn').style.display='none';
+}
+
+function runSim(){
+  const d=LD();if(!d)return;
+  const{biz,gjj}=computeState(d);
+  const tgt=document.getElementById('simTgt').value;
+  const loan=tgt==='biz'?{...biz}:{...gjj};
+  const amt=parseFloat(document.getElementById('simAmt').value)||0;
+  const el=document.getElementById('simResult');
+  const applyBtn=document.getElementById('simApplyBtn');
+
+  if(amt<=0){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--t3);font-size:12px">输入金额或点击快捷按钮，自动对比两种方案</div>';applyBtn.style.display='none';return}
+  if(amt>=loan.remain){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--ok);font-size:14px;font-weight:700">该金额可直接还清此贷款！<br><span style="font-size:11px;font-weight:400;color:var(--t2)">剩余本金 '+F0(loan.remain)+'，还需支付当月利息</span></div>';applyBtn.style.display='none';return}
+
+  const newRem=R2(loan.remain-amt);
+  // 当前剩余总利息
+  const curInt=R2(loan.periods*loan.monthly-loan.remain);
+
+  // 方案1：缩短期限（月供不变）
+  const s1P=recalcPeriods(newRem,loan.monthly,loan.rate);
+  const s1Int=R2(s1P*loan.monthly-newRem);
+  const s1Save=R2(curInt-s1Int);
+  const s1Cut=loan.periods-s1P;
+  const now=new Date();
+  const s1Off=new Date(now.getFullYear(),now.getMonth()+s1P);
+
+  // 方案2：减少月供（期数不变）
+  const s2M=calcPMT(newRem,loan.rate,loan.periods);
+  const s2Int=R2(loan.periods*s2M-newRem);
+  const s2Save=R2(curInt-s2Int);
+  const s2Diff=R2(loan.monthly-s2M);
+  const curOff=new Date(now.getFullYear(),now.getMonth()+loan.periods);
+
+  const rec1=s1Save>=s2Save;
+  const loanLabel=tgt==='biz'?'商贷':'公积金';
+
+  el.innerHTML=`
+    <div style="text-align:center;margin:10px 0 6px;font-size:11px;color:var(--t2)">
+      ${loanLabel}余额 <b>${F0(loan.remain)}</b> → <b>${F0(newRem)}</b>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="sim-card${rec1?' rec':''}">
+        ${rec1?'<div style="text-align:center;font-size:10px;color:var(--pri);font-weight:600;margin-bottom:4px">★ 推荐</div>':''}
+        <div class="sim-title">缩短期限</div>
+        <div class="sim-row"><span class="sl">月供不变</span><span class="sv">${F(loan.monthly)}</span></div>
+        <div class="sim-row"><span class="sl">缩短</span><span class="sv hi">${s1Cut}期(${P2T(s1Cut)})</span></div>
+        <div class="sim-row"><span class="sl">节省利息</span><span class="sv hi">${F0(s1Save)}</span></div>
+        <div class="sim-row"><span class="sl">新还清</span><span class="sv">${s1Off.getFullYear()}.${s1Off.getMonth()+1}</span></div>
+        <div class="sim-row"><span class="sl">剩余利息</span><span class="sv">${F0(s1Int)}</span></div>
+      </div>
+      <div class="sim-card${!rec1?' rec':''}">
+        ${!rec1?'<div style="text-align:center;font-size:10px;color:var(--pri);font-weight:600;margin-bottom:4px">★ 推荐</div>':''}
+        <div class="sim-title">减少月供</div>
+        <div class="sim-row"><span class="sl">新月供</span><span class="sv">${F(s2M)}</span></div>
+        <div class="sim-row"><span class="sl">每月少还</span><span class="sv hi">${F(s2Diff)}/月</span></div>
+        <div class="sim-row"><span class="sl">节省利息</span><span class="sv hi">${F0(s2Save)}</span></div>
+        <div class="sim-row"><span class="sl">还清不变</span><span class="sv">${curOff.getFullYear()}.${curOff.getMonth()+1}</span></div>
+        <div class="sim-row"><span class="sl">剩余利息</span><span class="sv">${F0(s2Int)}</span></div>
+      </div>
+    </div>
+    <div style="margin-top:10px;padding:8px 10px;background:#F8FAFC;border-radius:8px;font-size:10px;color:var(--t2);line-height:1.6">
+      当前剩余利息 <b>${F0(curInt)}</b><br>
+      缩短期限可多省 <b style="color:var(--pri)">${F0(Math.abs(s1Save-s2Save))}</b> 利息，但月供压力不变<br>
+      减少月供每月轻松 <b style="color:var(--pri)">${F(s2Diff)}</b>，适合现金流紧张
+    </div>`;
+  applyBtn.style.display='';
+  applyBtn.dataset.tgt=tgt;
+  applyBtn.dataset.amt=amt;
+}
+
+function simApply(){
+  const tgt=document.getElementById('simApplyBtn').dataset.tgt;
+  const amt=parseFloat(document.getElementById('simApplyBtn').dataset.amt)||0;
+  if(!amt)return;
+  closeMo('simModal');
+  // 打开记录弹窗并预填
+  openMo('event');
+  document.getElementById('preTgt').value=tgt;
+  document.getElementById('preAmt').value=amt;
+}
+
+// ============================================================
+//  数据导出/导入/重置
+// ============================================================
+function exportData(){
+  const d=LD();if(!d){alert('暂无数据');return}
+  const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='房贷数据_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();URL.revokeObjectURL(a.href);
+}
+function importData(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(){
+    try{
+      const d=JSON.parse(reader.result);
+      if(!d.baseline||!d.events){alert('文件格式不正确');return}
+      if(!confirm('导入将覆盖当前数据，确认？'))return;
+      SD(d);closeMo('initModal');render();
+    }catch(e){alert('文件解析失败：'+e.message)}
+  };
+  reader.readAsText(file);
+  input.value='';
+}
+function resetData(){
+  if(!confirm('重置将清除所有贷款数据。\n系统会先自动导出备份文件，确认继续？'))return;
+  // 先自动导出备份
+  exportData();
+  // 延迟让浏览器完成下载，再二次确认
+  setTimeout(()=>{
+    if(!confirm('备份文件已下载。\n确认重置所有数据？（可通过「导入数据」恢复）'))return;
+    localStorage.removeItem(SK);
+    location.reload();
+  },800);
+}
+
+// ============================================================
+//  OCR
+// ============================================================
+let ocrData={};
+const ocrZone=document.getElementById('ocrZone');
+ocrZone.addEventListener('dragover',e=>{e.preventDefault();ocrZone.style.borderColor='var(--pri)'});
+ocrZone.addEventListener('dragleave',()=>ocrZone.style.borderColor='');
+ocrZone.addEventListener('drop',e=>{e.preventDefault();ocrZone.style.borderColor='';if(e.dataTransfer.files[0])processOCR(e.dataTransfer.files[0])});
+function handleOCR(input){if(input.files[0])processOCR(input.files[0])}
+
+async function processOCR(file){
+  const pv=document.getElementById('ocrPreview'),st=document.getElementById('ocrStatus'),rs=document.getElementById('ocrResult'),ab=document.getElementById('ocrApplyBtn');
+  pv.src=URL.createObjectURL(file);pv.style.display='block';st.textContent='正在识别...';rs.style.display='none';ab.style.display='none';
+  try{
+    const worker=await Tesseract.createWorker('chi_sim+eng',1,{logger:m=>{if(m.status==='recognizing text')st.textContent='识别中 '+Math.round(m.progress*100)+'%'}});
+    const{data:{text}}=await worker.recognize(file);await worker.terminate();
+    st.textContent='识别完成：';ocrData=parseOCR(text);
+    rs.innerHTML=Object.entries({total:'贷款总额',remain:'剩余本金',rate:'年利率(%)',periods:'期数'}).map(([k,l])=>`<div class="or-row"><span class="or-k">${l}</span><span class="or-v">${ocrData[k]||'未识别'}</span></div>`).join('');
+    rs.style.display='block';ab.style.display='';
+  }catch(err){st.textContent='识别失败：'+err.message}
+}
+function parseOCR(text){
+  const r={},s=text.replace(/\s+/g,' ');
+  [[/[借贷]款?金额[^0-9]*([0-9,]+\.?\d*)/,'total'],[/[借贷]款?余额[^0-9]*([0-9,]+\.?\d*)/,'remain'],[/借据余额[^0-9]*([0-9,]+\.?\d*)/,'remain'],[/年利率[^0-9]*([0-9]+\.?\d*)%/,'rate'],[/贷款利率[^0-9]*([0-9]+\.?\d*)%/,'rate'],[/利率[（(]单利[)）][^0-9]*([0-9]+\.?\d*)%/,'rate'],[/期数[^0-9]*(\d+)/,'periods']].forEach(([p,k])=>{const m=s.match(p);if(m&&!r[k])r[k]=m[1].replace(/,/g,'')});
+  return r;
+}
+function applyOCR(){
+  const tg=document.getElementById('ocrTarget').value;const d=LD()||getDefault();
+  if(ocrData.total)d.baseline[tg].total=parseFloat(ocrData.total);
+  if(ocrData.remain)d.baseline[tg].remain=parseFloat(ocrData.remain);
+  if(ocrData.rate)d.baseline[tg].rate=parseFloat(ocrData.rate);
+  if(ocrData.periods)d.baseline[tg].periods=parseInt(ocrData.periods);
+  if(d.baseline[tg].remain>0&&d.baseline[tg].rate>0&&d.baseline[tg].periods>0)
+    d.baseline[tg].monthly=calcPMT(d.baseline[tg].remain,d.baseline[tg].rate,d.baseline[tg].periods);
+  SD(d);closeMo('ocrModal');openMo('init');
+}
+
+// ============================================================
+//  基线自动滚动
+//  当所有扣款日已过，自动推进基线到当月，持久化自动扣款记录
+// ============================================================
+function autoRollBaseline(){
+  const d=LD();if(!d)return;
+  const now=new Date();
+  const curYM=YM(now.getFullYear(),now.getMonth()+1);
+  const bizDay=d.bizPayDay||12,gjjDay=d.gjjPayDay||15;
+  const maxDay=Math.max(bizDay,gjjDay);
+
+  // 目标：当月所有扣款日已过→滚到当月，否则滚到上月
+  let targetYM;
+  if(now.getDate()>=maxDay){
+    targetYM=curYM;
+  }else{
+    let[y,m]=curYM.split('-').map(Number);m--;if(m<1){m=12;y--}
+    targetYM=YM(y,m);
+  }
+
+  if(targetYM<=d.asOfMonth)return; // 无需滚动
+
+  // 用 overrideEndYM 计算到目标月的状态（所有月视为已完成）
+  const{biz,gjj,timeline}=computeState(d,targetYM);
+
+  // 持久化自动扣款记录到events（防止历史丢失）
+  timeline.filter(e=>e.type==='auto').forEach(e=>{
+    const autoId='auto_'+e.date+'_'+e.loanType;
+    if(!d.events.find(ev=>ev.id===autoId)){
+      d.events.push({
+        id:autoId,date:e.date,type:'auto_hist',target:e.loanType,
+        amount:e.amount,prin:e.prin,int:e.int,
+        remain:e.loanType==='biz'?e._bizRem:e._gjjRem
+      });
+    }
+  });
+
+  // 持久化提前还款等用户事件的计算结果（补充remain）
+  timeline.filter(e=>e.type==='prepay').forEach(e=>{
+    const evt=d.events.find(ev=>ev.id===e.id);
+    if(evt){
+      evt._rolledRemain=e.target==='biz'?e._bizRem:e._gjjRem;
+    }
+  });
+
+  // 更新基线
+  d.asOfMonth=targetYM;
+  d.baseline.biz={total:d.baseline.biz.total,remain:biz.remain,monthly:biz.monthly,rate:biz.rate,periods:biz.periods};
+  d.baseline.gjj={total:d.baseline.gjj.total,remain:gjj.remain,monthly:gjj.monthly,rate:gjj.rate,periods:gjj.periods};
+
+  d.events.sort((a,b)=>a.date.localeCompare(b.date));
+  SD(d);
+}
+
+// ============================================================
+//  首次引导
+// ============================================================
+let _guideStep=0,_guideType='combo';
+function showGuide(){
+  _guideStep=0;_guideType='combo';
+  document.getElementById('guideModal').classList.add('show');
+  renderGuide();
+}
+function renderGuide(){
+  const el=document.getElementById('guideContent');
+  const dots=n=>'<div class="guide-step">'+[0,1,2].map(i=>'<i class="'+(i===n?'on':'')+'"></i>').join('')+'</div>';
+
+  if(_guideStep===0){
+    el.innerHTML=`
+      <div class="guide-hero">
+        <div class="icon">🏠</div>
+        <h2>房贷消除计划</h2>
+        <p>清晰掌握每一笔房贷进度<br>模拟提前还款，找到最优方案<br>让每一分利息都算得明白</p>
+      </div>
+      ${dots(0)}
+      <button class="btn btn1" style="width:100%;padding:14px;font-size:14px" onclick="_guideStep=1;renderGuide()">开始设置（约1分钟）</button>
+      <p style="text-align:center;margin-top:10px;font-size:11px;color:var(--t3)">所有数据保存在你的设备本地，不会上传</p>`;
+  }else if(_guideStep===1){
+    el.innerHTML=`
+      <h3 style="text-align:center;margin-bottom:12px">你的贷款类型</h3>
+      ${dots(1)}
+      <div class="guide-opt${_guideType==='combo'?' on':''}" onclick="_guideType='combo';renderGuide()">
+        <b>组合贷（最常见）</b><span style="color:var(--pri)">商贷+公积金</span>
+      </div>
+      <div class="guide-opt${_guideType==='biz'?' on':''}" onclick="_guideType='biz';renderGuide()">
+        <b>纯商业贷款</b><span>只有商贷</span>
+      </div>
+      <div class="guide-opt${_guideType==='gjj'?' on':''}" onclick="_guideType='gjj';renderGuide()">
+        <b>纯公积金贷款</b><span>只有公积金</span>
+      </div>
+      <div class="fa">
+        <button class="btn btn2" onclick="_guideStep=0;renderGuide()">上一步</button>
+        <button class="btn btn1" onclick="_guideStep=2;renderGuide()">下一步</button>
+      </div>`;
+  }else if(_guideStep===2){
+    const showB=_guideType!=='gjj',showG=_guideType!=='biz';
+    el.innerHTML=`
+      <h3 style="text-align:center;margin-bottom:4px">填写贷款信息</h3>
+      <p style="text-align:center;font-size:11px;color:var(--t2);margin-bottom:10px">打开银行APP → 我的贷款 → 贷款详情</p>
+      ${dots(2)}
+      ${showB?`
+      <div class="sep biz">商业贷款</div>
+      <div class="fr">
+        <div class="fg"><label>剩余本金（元）</label><input type="number" id="gBR" step="0.01" placeholder="贷款余额"><div class="guide-hint">银行APP「剩余本金」或「贷款余额」</div></div>
+        <div class="fg"><label>每月还款（元）</label><input type="number" id="gBM" step="0.01" placeholder="月供金额"><div class="guide-hint">每月固定扣款金额</div></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label>年利率（%）</label><input type="number" id="gBRa" step="0.01" placeholder="如 3.2"><div class="guide-hint">「执行利率」或「年利率」</div></div>
+        <div class="fg"><label>剩余期数</label><input type="number" id="gBP" placeholder="如 320"><div class="guide-hint">「剩余期数」，无则用总期数-已还期数</div></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label>贷款总额（元）</label><input type="number" id="gBT" step="0.01" placeholder="最初贷了多少"></div>
+        <div class="fg"><label>还款日（几号）</label><input type="number" id="gBDay" min="1" max="28" placeholder="如 12"><div class="guide-hint">每月几号自动扣款</div></div>
+      </div>`:''}
+      ${showG?`
+      <div class="sep gjj">公积金贷款</div>
+      <div class="fr">
+        <div class="fg"><label>剩余本金（元）</label><input type="number" id="gGR" step="0.01" placeholder="贷款余额"><div class="guide-hint">公积金中心APP或银行APP查看</div></div>
+        <div class="fg"><label>每月还款（元）</label><input type="number" id="gGM" step="0.01" placeholder="月供金额"></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label>年利率（%）</label><input type="number" id="gGRa" step="0.01" placeholder="如 2.85"></div>
+        <div class="fg"><label>剩余期数</label><input type="number" id="gGP" placeholder="如 320"></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label>贷款总额（元）</label><input type="number" id="gGT" step="0.01" placeholder="最初贷了多少"></div>
+        <div class="fg"><label>还款日（几号）</label><input type="number" id="gGDay" min="1" max="28" placeholder="如 15"></div>
+      </div>`:''}
+      <div class="fg"><label>贷款起始月份</label><input type="month" id="gDate"><div class="guide-hint">第一次开始还房贷的月份</div></div>
+      <div class="fa">
+        <button class="btn btn2" onclick="_guideStep=1;renderGuide()">上一步</button>
+        <button class="btn btn1" onclick="saveGuide()">完成设置</button>
+      </div>`;
+  }
+}
+
+function saveGuide(){
+  const showB=_guideType!=='gjj',showG=_guideType!=='biz';
+  const gv=(id)=>parseFloat(document.getElementById(id)?.value)||0;
+  const gi=(id)=>parseInt(document.getElementById(id)?.value)||0;
+
+  const bR=showB?gv('gBR'):0,gR=showG?gv('gGR'):0;
+  if(bR<=0&&gR<=0){alert('请至少填写一个贷款的剩余本金');return}
+
+  const now=new Date();const curYM=YM(now.getFullYear(),now.getMonth()+1);
+  const d={
+    initDate:document.getElementById('gDate')?.value||curYM,
+    bizPayDay:showB?(gi('gBDay')||12):12,
+    gjjPayDay:showG?(gi('gGDay')||15):15,
+    asOfMonth:curYM,
+    baseline:{
+      biz:{total:showB?(gv('gBT')||bR):0,remain:bR,monthly:showB?gv('gBM'):0,rate:showB?gv('gBRa'):0,periods:showB?gi('gBP'):0},
+      gjj:{total:showG?(gv('gGT')||gR):0,remain:gR,monthly:showG?gv('gGM'):0,rate:showG?gv('gGRa'):0,periods:showG?gi('gGP'):0}
+    },
+    events:[]
+  };
+  SD(d);
+  document.getElementById('guideModal').classList.remove('show');
+  render();
+}
+
+// ============================================================
+//  数据迁移 & 启动
+// ============================================================
+(function startup(){
+  // 从v4迁移到v5
+  const old=localStorage.getItem('mortgage_v4');
+  if(old&&!LD()){
+    try{
+      const d=JSON.parse(old);
+      const v5={
+        initDate:d.initDate,bizPayDay:d.bizPayDay||12,gjjPayDay:d.gjjPayDay||15,
+        asOfMonth:'2026-04',
+        baseline:{
+          biz:{total:d.biz?.total||1100000,remain:854147.66,monthly:3971.42,rate:3.2,periods:320},
+          gjj:{total:d.gjj?.total||1200000,remain:1133971.27,monthly:calcPMT(1133971.27,2.6,320),rate:2.6,periods:320}
+        },
+        events:d.events?.filter(e=>e.type==='prepay'||e.type==='rate')||[]
+      };
+      SD(v5);
+    }catch(e){}
+  }
+
+  // 首次使用：显示引导，不加载默认数据
+  if(!LD()){
+    showGuide();
+    return; // 不执行后续的render
+  }
+
+  // 确保历史提前还款记录存在
+  const cur=LD();
+  if(cur&&!cur.events.find(e=>e.id==='hist_biz_prepay_1')){
+    cur.events.push({id:'hist_biz_prepay_1',date:'2024-09-25',type:'prepay',target:'biz',amount:200000,mode:'shorten',note:'提前还款20万'});
+    cur.events.sort((a,b)=>a.date.localeCompare(b.date));
+    SD(cur);
+  }
+
+  autoRollBaseline();
+  render();
+})();
+setInterval(()=>{const n=new Date();if(n.getHours()===0&&n.getMinutes()===0)render()},60000);
+</script>
+</body>
+</html>
