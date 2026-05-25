@@ -74,11 +74,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans G
 
 .lc-schedule{max-height:0;overflow:hidden;transition:max-height .4s ease}
 .lc-schedule.open{max-height:2000px;overflow-y:auto}
-.sch-table{width:100%;border-collapse:collapse;font-size:10px}
-.sch-table th{background:#F8FAFC;padding:8px 4px;font-weight:600;color:var(--t2);border-bottom:2px solid var(--bd);position:sticky;top:0;text-align:right;font-size:9px}
-.sch-table th:first-child{text-align:left;padding-left:10px;width:60px}
-.sch-table td{padding:7px 4px;border-bottom:1px solid #F8FAFC;text-align:right;font-variant-numeric:tabular-nums}
-.sch-table td:first-child{text-align:left;color:var(--t2);font-size:9px;padding-left:10px;width:60px;word-break:break-all;line-height:1.3}
+.sch-table{width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed}
+.sch-table th{background:#F8FAFC;padding:6px 3px;font-weight:600;color:var(--t2);border-bottom:2px solid var(--bd);position:sticky;top:0;text-align:right;font-size:9px;overflow:hidden}
+.sch-table th:first-child{text-align:left;padding-left:8px;width:52px}
+.sch-table td{padding:5px 3px;border-bottom:1px solid #F8FAFC;text-align:right;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+.sch-table td:first-child{text-align:left;color:var(--t2);font-size:9px;padding-left:8px;width:52px;line-height:1.3;overflow:visible;white-space:normal}
 .sch-table td:last-child{padding-right:16px;font-weight:600}
 .sch-table th:last-child{padding-right:16px}
 .sch-table tr.cur{background:#EEF2FF}
@@ -763,7 +763,7 @@ function renderHistoryTable(type,rawData,timeline){
       rows.push({date:e.date,label:'月供',prin:e.prin,int:e.int,pay:e.amount,rem:e.remain,cls:''});
     }else if(e.type==='prepay'){
       const rem=e.remainAfter!=null?e.remainAfter:(e._rolledRemain!=null?e._rolledRemain:null);
-      rows.push({date:e.date,label:'提前还款(历史)',prin:e.amount,int:null,pay:e.amount,rem,cls:'row-prepay',note:e.note,eid:e.id});
+      rows.push({date:e.date,label:'提前还(历史)',prin:e.amount,int:null,pay:e.amount,rem,cls:'row-prepay',note:e.note,eid:e.id});
     }else if(e.type==='rate'){
       rows.push({date:e.date,label:'利率调整(历史)',prin:null,int:null,pay:null,rem:null,cls:'row-hist',note:e.note,eid:e.id});
     }
@@ -777,8 +777,8 @@ function renderHistoryTable(type,rawData,timeline){
     if(e.type==='auto'){
       rows.push({date:e.date,label:'月供',prin:e.prin,int:e.int,pay:e.amount,rem,cls:''});
     }else if(e.type==='prepay'){
-      const modeL=e.mode==='reduce'?'减月供':'缩期限';
-      rows.push({date:e.date,label:'提前还款('+modeL+')',prin:e.amount,int:null,pay:e.amount,rem,cls:'row-prepay',note:e.note,eid:e.id});
+      const modeL=e.mode==='reduce'?'减月供':'缩期';
+      rows.push({date:e.date,label:'提前还('+modeL+')',prin:e.amount,int:null,pay:e.amount,rem,cls:'row-prepay',note:e.note,eid:e.id});
     }else if(e.type==='correction'){
       rows.push({date:e.date,label:'余额校正',prin:null,int:null,pay:null,rem:e.correctRemain||rem,cls:'row-hist',eid:e.id});
     }else if(e.type==='rate'){
@@ -791,7 +791,7 @@ function renderHistoryTable(type,rawData,timeline){
 
   if(!rows.length){histEl.innerHTML='<div style="text-align:center;padding:16px;color:var(--t3);font-size:12px">暂无已还记录，点击底部「+ 记录」添加</div>';return}
 
-  const fd=d=>d.replace(/(\d{4})-(\d{2})-(\d{2})/,'$1年$2月$3日').replace(/(\d{4})-(\d{2})/,'$1年$2月');
+  const fd=d=>d.replace(/(\d{4})-(\d{2})-(\d{2})/,'$2/$3').replace(/(\d{4})-(\d{2})/,'$1/$2');
   histEl.innerHTML=`
     <table class="sch-table"><thead><tr><th style="text-align:left">日期</th><th>本金</th><th>利息</th><th>还款额</th><th>剩余本金</th></tr></thead><tbody>
     ${rows.map(r=>{
